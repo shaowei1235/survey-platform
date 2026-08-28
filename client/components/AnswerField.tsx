@@ -1,0 +1,84 @@
+"use client";
+
+import { Checkbox, Input, Radio, Space, Typography } from "antd";
+import type { ComponentItem } from "../lib/api";
+
+type Props = {
+  item: ComponentItem;
+  value: unknown;
+  onChange: (value: unknown) => void;
+};
+
+export function AnswerField({ item, value, onChange }: Props) {
+  const title = String(item.props.title ?? "");
+  const required = Boolean(item.props.required);
+  const heading = (
+    <Typography.Paragraph strong>
+      {title}
+      {required ? " *" : ""}
+    </Typography.Paragraph>
+  );
+
+  if (item.type === "title") {
+    return <Typography.Title level={4}>{title}</Typography.Title>;
+  }
+  if (item.type === "paragraph") {
+    return <Typography.Paragraph>{title}</Typography.Paragraph>;
+  }
+  if (item.type === "radio") {
+    const options = (item.props.options as { value: string; label: string }[]) ?? [];
+    return (
+      <div style={{ marginBottom: 24 }}>
+        {heading}
+        <Radio.Group value={value} onChange={(e) => onChange(e.target.value)}>
+          <Space direction="vertical">
+            {options.map((o) => (
+              <Radio key={o.value} value={o.value}>
+                {o.label}
+              </Radio>
+            ))}
+          </Space>
+        </Radio.Group>
+      </div>
+    );
+  }
+  if (item.type === "checkbox") {
+    const options = (item.props.options as { value: string; label: string }[]) ?? [];
+    return (
+      <div style={{ marginBottom: 24 }}>
+        {heading}
+        <Checkbox.Group
+          value={(value as string[]) ?? []}
+          options={options.map((o) => ({ value: o.value, label: o.label }))}
+          onChange={(v) => onChange(v)}
+        />
+      </div>
+    );
+  }
+  if (item.type === "input") {
+    return (
+      <div style={{ marginBottom: 24 }}>
+        {heading}
+        <Input
+          maxLength={Number(item.props.maxLength) || 200}
+          value={typeof value === "string" ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+    );
+  }
+  if (item.type === "textarea") {
+    return (
+      <div style={{ marginBottom: 24 }}>
+        {heading}
+        <Input.TextArea
+          maxLength={Number(item.props.maxLength) || 2000}
+          rows={4}
+          value={typeof value === "string" ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+    );
+  }
+  return null;
+}

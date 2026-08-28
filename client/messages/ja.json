@@ -1,0 +1,32 @@
+{
+  "appName": "社内アンケート基盤",
+  "login": {
+    "employeeNo": "社員番号",
+    "password": "パスワード",
+    "submit": "ログイン",
+    "noAnswerRole": "回答権限がありません。"
+  },
+  "answer": {
+    "list": "回答できるアンケート",
+    "none": "現在回答できるアンケートはありません。",
+    "fill": "回答",
+    "start": "回答する",
+    "submit": "送信する",
+    "attrBound": "回答は所属情報と紐づきます。部門・職級・年代はご自身で入力する必要はありません。",
+    "thanks": "ご回答ありがとうございました。",
+    "back": "一覧へ戻る",
+    "logout": "ログアウト",
+    "required": "必須項目です。"
+  },
+  "error": {
+    "generic": "処理に失敗しました。",
+    "validation": "入力内容を確認してください。",
+    "invalid_component": "設問定義が不正です。",
+    "unauthenticated": "再ログインしてください。",
+    "invalid_credentials": "社員番号またはパスワードが正しくありません。",
+    "forbidden_role": "この操作は許可されていません。",
+    "not_found": "対象が見つかりません。",
+    "already_submitted": "既に回答済みです。",
+    "not_published": "公開されていないアンケートです。"
+  }
+}
