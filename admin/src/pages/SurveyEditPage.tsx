@@ -1,5 +1,5 @@
 import { ActionCreators } from "redux-undo";
-import { Button, Input, Space, message } from "antd";
+import { Alert, Button, Input, Space, Tag, message } from "antd";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
@@ -10,6 +10,13 @@ import { editorActions, type RootState } from "../store";
 import { validateComponentList, withNormalizedChoices } from "../choiceOptions";
 import { canWriteSurvey, type Me } from "../session";
 
+function lockMessageKey(status: string, writable: boolean): string | null {
+  if (status === "published") return "editor.readOnlyPublished";
+  if (status === "closed") return "editor.readOnlyClosed";
+  if (!writable) return "editor.readOnlyNoRole";
+  return null;
+}
+
 export function SurveyEditPage({ me }: { me: Me }) {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -18,6 +25,7 @@ export function SurveyEditPage({ me }: { me: Me }) {
   const present = useSelector((s: RootState) => s.editor.present);
   const writable = canWriteSurvey(me);
   const locked = present.status !== "draft" || !writable;
+  const lockMessage = lockMessageKey(present.status, writable);
 
   useEffect(() => {
     if (!id) return;
@@ -76,6 +84,7 @@ export function SurveyEditPage({ me }: { me: Me }) {
 
   return (
     <Space direction="vertical" style={{ width: "100%" }} size="middle">
+      {lockMessage ? <Alert type="info" showIcon message={t(lockMessage)} /> : null}
       <Space wrap>
         <Input
           style={{ width: 360 }}
@@ -83,6 +92,7 @@ export function SurveyEditPage({ me }: { me: Me }) {
           value={present.title}
           onChange={(e) => dispatch(editorActions.setTitle(e.target.value))}
         />
+        <Tag>{t(`survey.status.${present.status}`)}</Tag>
         <Button disabled={locked} onClick={() => dispatch(ActionCreators.undo())}>
           {t("editor.undo")}
         </Button>

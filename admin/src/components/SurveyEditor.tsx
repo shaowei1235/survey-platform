@@ -74,6 +74,7 @@ function SortableRow({ item, selected, locked }: { item: ComponentItem; selected
 function CanvasEnd({ locked, empty }: { locked: boolean; empty: boolean }) {
   const { t } = useTranslation();
   const { setNodeRef, isOver } = useDroppable({ id: CANVAS_END, disabled: locked });
+  if (locked) return null;
   return (
     <div
       ref={setNodeRef}
