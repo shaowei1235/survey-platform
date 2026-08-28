@@ -26,7 +26,7 @@ export function LoginPage() {
   return (
     <div style={{ maxWidth: 360, margin: "80px auto" }}>
       <Typography.Title level={3}>{t("appName")}</Typography.Title>
-      <Form layout="vertical" onFinish={onFinish}>
+      <Form layout="vertical" onFinish={onFinish} initialValues={{ employee_no: "E-HR", password: "Init#pass1" }}>
         <Form.Item name="employee_no" label={t("login.employeeNo")} rules={[{ required: true }]}>
           <Input autoComplete="username" />
         </Form.Item>
