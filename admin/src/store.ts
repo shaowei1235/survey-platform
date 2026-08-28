@@ -2,6 +2,7 @@ import { configureStore, createSlice, type PayloadAction } from "@reduxjs/toolki
 import undoable, { excludeAction } from "redux-undo";
 import { nanoid } from "nanoid";
 import type { ComponentItem } from "./session";
+import { nextOptionValue, parseOptions, type ChoiceOption } from "./choiceOptions";
 
 export type EditorPresent = {
   surveyId: string;
@@ -95,6 +96,25 @@ const editorSlice = createSlice({
         target.props = action.payload.props;
         state.dirty = true;
       }
+    },
+    addChoiceOption(state, action: PayloadAction<{ fe_id: string; label: string }>) {
+      const target = state.componentList.find((c) => c.fe_id === action.payload.fe_id);
+      if (!target) return;
+      const options = parseOptions(target.props);
+      const value = nextOptionValue(options);
+      const next: ChoiceOption = { value, label: action.payload.label };
+      const n = Number(value);
+      if (target.type === "radio" && target.props.scoreEnabled && Number.isInteger(n)) next.score = n;
+      target.props = { ...target.props, options: [...options, next] };
+      state.dirty = true;
+    },
+    removeChoiceOption(state, action: PayloadAction<{ fe_id: string; index: number }>) {
+      const target = state.componentList.find((c) => c.fe_id === action.payload.fe_id);
+      if (!target) return;
+      const options = parseOptions(target.props);
+      if (options.length <= 2) return;
+      target.props = { ...target.props, options: options.filter((_, i) => i !== action.payload.index) };
+      state.dirty = true;
     },
     markSaved(state) {
       state.dirty = false;

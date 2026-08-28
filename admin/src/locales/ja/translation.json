@@ -77,7 +77,20 @@
     "textarea": "自由記述",
     "required": "必須",
     "scoreEnabled": "スコア（リッカート）",
-    "delete": "削除"
+    "delete": "削除",
+    "options": "選択肢",
+    "optionLabel": "表示名",
+    "optionValue": "値",
+    "optionScore": "スコア",
+    "addOption": "選択肢を追加",
+    "newOption": "新しい選択肢",
+    "validation": {
+      "minOptions": "選択肢は2件以上必要です。",
+      "valueRequired": "選択肢の値を入力してください。",
+      "labelRequired": "選択肢の表示名を入力してください。",
+      "valueDuplicate": "選択肢の値は重複できません。",
+      "scoreRequired": "リッカートの各選択肢に整数スコアが必要です。"
+    }
   },
   "role": {
     "systemAdmin": "システム管理者",

@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { editorActions, type RootState } from "../store";
 import type { ComponentItem } from "../session";
+import { OptionListEditor } from "./OptionListEditor";
 
 const PALETTE = ["title", "paragraph", "radio", "checkbox", "input", "textarea"] as const;
 
@@ -46,7 +47,7 @@ export function SurveyEditor({ locked }: { locked: boolean }) {
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 280px", gap: 12, minHeight: 480 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 320px", gap: 12, minHeight: 480 }}>
       <Card title={t("editor.palette")} size="small">
         <Space direction="vertical" style={{ width: "100%" }}>
           {PALETTE.map((type) => (
@@ -65,7 +66,7 @@ export function SurveyEditor({ locked }: { locked: boolean }) {
           </SortableContext>
         </DndContext>
       </Card>
-      <Card title={t("editor.props")} size="small">
+      <Card title={t("editor.props")} size="small" styles={{ body: { maxHeight: 640, overflow: "auto" } }}>
         {selected ? (
           <Form layout="vertical" disabled={locked} key={selected.fe_id}>
             <Form.Item label={t("survey.title")}>
@@ -119,6 +120,16 @@ export function SurveyEditor({ locked }: { locked: boolean }) {
                       }),
                     )
                   }
+                />
+              </Form.Item>
+            ) : null}
+            {selected.type === "radio" || selected.type === "checkbox" ? (
+              <Form.Item>
+                <OptionListEditor
+                  feId={selected.fe_id}
+                  type={selected.type}
+                  componentProps={selected.props}
+                  locked={locked}
                 />
               </Form.Item>
             ) : null}

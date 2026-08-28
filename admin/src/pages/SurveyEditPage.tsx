@@ -7,6 +7,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { api, apiMessageKey } from "../api";
 import { SurveyEditor } from "../components/SurveyEditor";
 import { editorActions, type RootState } from "../store";
+import { validateComponentList, withNormalizedChoices } from "../choiceOptions";
 import { canWriteSurvey, type Me } from "../session";
 
 export function SurveyEditPage({ me }: { me: Me }) {
@@ -53,8 +54,14 @@ export function SurveyEditPage({ me }: { me: Me }) {
   }, [dispatch, locked]);
 
   const save = async () => {
+    const component_list = withNormalizedChoices(present.componentList);
+    const invalid = validateComponentList(component_list);
+    if (invalid) {
+      message.error(t(invalid));
+      return;
+    }
     try {
-      await api.patch(`/surveys/${id}`, { title: present.title, component_list: present.componentList });
+      await api.patch(`/surveys/${id}`, { title: present.title, component_list });
       dispatch(editorActions.markSaved());
       message.success(t("survey.save"));
     } catch (e) {
