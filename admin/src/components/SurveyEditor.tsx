@@ -1,4 +1,12 @@
-import { DndContext, type DragEndEvent, closestCenter } from "@dnd-kit/core";
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button, Card, Checkbox, Form, Input, InputNumber, Space, Typography } from "antd";
@@ -36,6 +44,11 @@ export function SurveyEditor({ locked }: { locked: boolean }) {
   const dispatch = useDispatch();
   const present = useSelector((s: RootState) => s.editor.present);
   const selected = present.componentList.find((c) => c.fe_id === present.selectedFeId);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  const onDragStart = (event: DragStartEvent) => {
+    dispatch(editorActions.select(String(event.active.id)));
+  };
 
   const onDragEnd = (event: DragEndEvent) => {
     if (locked) return;
@@ -58,7 +71,7 @@ export function SurveyEditor({ locked }: { locked: boolean }) {
         </Space>
       </Card>
       <Card title={t("editor.canvas")} size="small">
-        <DndContext collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={onDragStart} onDragEnd={onDragEnd}>
           <SortableContext items={present.componentList.map((c) => c.fe_id)} strategy={verticalListSortingStrategy}>
             {present.componentList.map((item) => (
               <SortableRow key={item.fe_id} item={item} selected={item.fe_id === present.selectedFeId} locked={locked} />
@@ -137,7 +150,9 @@ export function SurveyEditor({ locked }: { locked: boolean }) {
               {t("editor.delete")}
             </Button>
           </Form>
-        ) : null}
+        ) : (
+          <Typography.Text type="secondary">{t("editor.selectHint")}</Typography.Text>
+        )}
       </Card>
     </div>
   );
