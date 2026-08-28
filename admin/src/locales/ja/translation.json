@@ -1,0 +1,109 @@
+{
+  "appName": "社内アンケート基盤",
+  "nav": {
+    "login": "ログイン",
+    "home": "ホーム",
+    "surveys": "アンケート",
+    "dept": "部門",
+    "users": "従業員",
+    "dashboard": "分析ダッシュボード",
+    "analyze": "固定分析",
+    "logout": "ログアウト"
+  },
+  "login": {
+    "employeeNo": "社員番号",
+    "password": "パスワード",
+    "submit": "ログイン",
+    "useClientApp": "管理機能の権限がありません。回答者アプリを利用してください。",
+    "noAnswerRole": "回答権限がありません。"
+  },
+  "home": {
+    "welcome": "メニューを選択してください。"
+  },
+  "survey": {
+    "list": "アンケート一覧",
+    "edit": "アンケート編集",
+    "create": "新規作成",
+    "newTitle": "新規アンケート",
+    "publish": "公開",
+    "close": "終了",
+    "save": "保存",
+    "title": "タイトル",
+    "statusLabel": "状態",
+    "unsavedConfirm": "未保存の変更があります。閉じますか？",
+    "status": {
+      "draft": "下書き",
+      "published": "公開中",
+      "closed": "終了"
+    }
+  },
+  "org": {
+    "dept": "部門",
+    "user": "従業員",
+    "name": "名称",
+    "parent": "上位部門",
+    "employeeNo": "社員番号",
+    "displayName": "氏名",
+    "generation": "年代",
+    "jobGrade": "職級",
+    "roles": "役割",
+    "create": "追加"
+  },
+  "dash": {
+    "title": "分析ダッシュボード",
+    "empty": "表示できるデータがありません。",
+    "masked": "非開示（n<5）",
+    "load": "表示"
+  },
+  "analyze": {
+    "title": "固定分析",
+    "run": "分析する",
+    "summary": "自由記述の要約",
+    "intent": "意図",
+    "dept_low_score_and_causes": "指定部門の低満足項目と主な原因",
+    "insufficient_n": "開示可能なサンプルが不足しています。"
+  },
+  "editor": {
+    "palette": "部品",
+    "canvas": "キャンバス",
+    "props": "プロパティ",
+    "undo": "元に戻す",
+    "redo": "やり直す",
+    "title": "見出し",
+    "paragraph": "説明",
+    "radio": "単一選択",
+    "checkbox": "複数選択",
+    "input": "一行入力",
+    "textarea": "自由記述",
+    "required": "必須",
+    "scoreEnabled": "スコア（リッカート）",
+    "delete": "削除"
+  },
+  "role": {
+    "systemAdmin": "システム管理者",
+    "hrPlanner": "人事企画",
+    "executive": "経営層",
+    "deptManager": "部門長",
+    "employee": "従業員"
+  },
+  "chart": {
+    "dept_scores": "部門別平均"
+  },
+  "error": {
+    "generic": "処理に失敗しました。",
+    "validation": "入力内容を確認してください。",
+    "unknown_intent": "未知の分析意図です。",
+    "invalid_component": "設問定義が不正です。",
+    "unauthenticated": "再ログインしてください。",
+    "invalid_credentials": "社員番号またはパスワードが正しくありません。",
+    "forbidden_role": "この操作は許可されていません。",
+    "forbidden_scope": "対象部門を参照する権限がありません。",
+    "not_found": "対象が見つかりません。",
+    "survey_not_editable": "このアンケートは編集できません。",
+    "already_submitted": "既に回答済みです。",
+    "not_published": "公開されていないアンケートです。",
+    "ai_upstream": "AIサービスを利用できません。",
+    "ai_timeout": "AI応答がタイムアウトしました。",
+    "ai_number_mismatch": "AIの数値と集計が一致しません。"
+  }
+}
