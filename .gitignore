@@ -1,0 +1,31 @@
+# 产品文书（社内限定）
+docs/
+
+# 依赖与构建
+node_modules/
+dist/
+build/
+.next/
+out/
+coverage/
+.turbo/
+.cache/
+
+# Python
+__pycache__/
+.venv/
+venv/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+api/.venv/
+
+# 环境与密钥
+.env
+.env.*
+!.env.example
+
+# 系统
+.DS_Store
+*.log
