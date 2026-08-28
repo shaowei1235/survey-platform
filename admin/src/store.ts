@@ -77,6 +77,17 @@ const editorSlice = createSlice({
       state.selectedFeId = item.fe_id;
       state.dirty = true;
     },
+    insertComponent(state, action: PayloadAction<{ type: string; index: number }>) {
+      const item: ComponentItem = {
+        fe_id: `c_${nanoid(21)}`,
+        type: action.payload.type,
+        props: defaultProps(action.payload.type),
+      };
+      const index = Math.max(0, Math.min(action.payload.index, state.componentList.length));
+      state.componentList.splice(index, 0, item);
+      state.selectedFeId = item.fe_id;
+      state.dirty = true;
+    },
     removeComponent(state, action: PayloadAction<string>) {
       state.componentList = state.componentList.filter((c) => c.fe_id !== action.payload);
       if (state.selectedFeId === action.payload) state.selectedFeId = null;
