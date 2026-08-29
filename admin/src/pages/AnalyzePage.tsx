@@ -1,14 +1,25 @@
-import { Button, Card, Form, Input, Select, Typography, message } from "antd";
+import { Button, Card, Form, Select, Table, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiMessageKey } from "../api";
+
+type LowQuestion = { fe_id: string; title: string; avg_score: number | null; n: number | null; masked: boolean };
+type Quote = { text: string; fe_id: string };
+type IntentOut = {
+  conclusion?: string;
+  message_key?: string;
+  negative_tendency?: string;
+  topics?: Array<{ label: string; count_hint: string }>;
+  quotes?: Quote[];
+  evidence?: { low_questions?: LowQuestion[]; quotes?: Quote[] };
+};
 
 export function AnalyzePage() {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const [surveys, setSurveys] = useState<Array<{ id: string; title: string }>>([]);
   const [depts, setDepts] = useState<Array<{ id: string; name: string }>>([]);
-  const [out, setOut] = useState<Record<string, unknown> | null>(null);
+  const [out, setOut] = useState<IntentOut | null>(null);
 
   useEffect(() => {
     void Promise.all([api.get("/surveys"), api.get("/departments")])
@@ -18,6 +29,14 @@ export function AnalyzePage() {
       })
       .catch((e) => message.error(t(apiMessageKey(e))));
   }, [t]);
+
+  const lows = out?.evidence?.low_questions ?? [];
+  const quotes = out?.evidence?.quotes ?? out?.quotes ?? [];
+  const heading =
+    out?.conclusion ||
+    (typeof out?.message_key === "string" ? t(out.message_key) : "") ||
+    out?.negative_tendency ||
+    "";
 
   return (
     <>
@@ -67,10 +86,38 @@ export function AnalyzePage() {
       </Form>
       {out ? (
         <Card style={{ marginTop: 16 }}>
-          <Typography.Paragraph>
-            {String(out.conclusion ?? (typeof out.message_key === "string" ? t(out.message_key) : (out.negative_tendency ?? "")))}
-          </Typography.Paragraph>
-          <Input.TextArea readOnly autoSize value={JSON.stringify(out.evidence ?? out, null, 2)} />
+          {heading ? <Typography.Paragraph>{heading}</Typography.Paragraph> : null}
+          {out.topics && out.topics.length > 0 ? (
+            <Typography.Paragraph>
+              {out.topics.map((item) => `${item.label}（${item.count_hint}）`).join("、")}
+            </Typography.Paragraph>
+          ) : null}
+          {lows.length > 0 ? (
+            <>
+              <Typography.Title level={5}>{t("analyze.lowQuestions")}</Typography.Title>
+              <Table
+                size="small"
+                rowKey="fe_id"
+                pagination={false}
+                dataSource={lows}
+                columns={[
+                  { title: t("survey.title"), dataIndex: "title" },
+                  {
+                    title: t("analyze.avgScore"),
+                    render: (_: unknown, row: LowQuestion) => (row.masked ? t("dash.masked") : row.avg_score),
+                  },
+                ]}
+              />
+            </>
+          ) : null}
+          {quotes.length > 0 ? (
+            <>
+              <Typography.Title level={5}>{t("analyze.quotes")}</Typography.Title>
+              {quotes.map((q) => (
+                <Typography.Paragraph key={`${q.fe_id}-${q.text}`}>{q.text}</Typography.Paragraph>
+              ))}
+            </>
+          ) : null}
         </Card>
       ) : null}
     </>

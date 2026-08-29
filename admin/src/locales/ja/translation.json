@@ -61,7 +61,10 @@
     "summary": "自由記述の要約",
     "intent": "意図",
     "dept_low_score_and_causes": "指定部門の低満足項目と主な原因",
-    "insufficient_n": "開示可能なサンプルが不足しています。"
+    "insufficient_n": "開示可能なサンプルが不足しています。",
+    "lowQuestions": "集計上の低満足項目",
+    "avgScore": "平均点",
+    "quotes": "去識別した引用"
   },
   "editor": {
     "palette": "部品",

@@ -225,6 +225,50 @@ def test_qa19_intent_without_llm(
     assert "conclusion" not in res.json()
 
 
+def test_qa18_intent_mock_numbers_match_table(
+    api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str], monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        "app.routers.analytics.complete_json",
+        lambda *_args, **_kwargs: {"conclusion": "営業部では労働時間と人事制度への不満が相対的に目立ちます。"},
+    )
+    tab = api.get(
+        "/api/v1/analytics/cross-tab",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["営業部"]},
+    )
+    assert tab.status_code == 200, tab.text
+    res = api.post(
+        "/api/v1/analytics/intent",
+        headers=hr_auth,
+        json={"survey_id": demo_survey_id, "intent": "dept_low_score_and_causes", "department_id": depts["営業部"]},
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["conclusion"]
+    lows = body["evidence"]["low_questions"]
+    assert lows
+    by_id = {c["fe_id"]: c["avg_score"] for c in tab.json()["rows"][0]["cells"] if not c["masked"]}
+    for item in lows:
+        assert item["avg_score"] == by_id[item["fe_id"]]
+    assert all("E-SALES-01" not in (q.get("text") or "") for q in body["evidence"].get("quotes") or [])
+
+
+def test_qa20_intent_mock_invented_score(
+    api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str], monkeypatch
+) -> None:
+    monkeypatch.setattr(
+        "app.routers.analytics.complete_json",
+        lambda *_args, **_kwargs: {"conclusion": "平均点は1.11です。"},
+    )
+    res = api.post(
+        "/api/v1/analytics/intent",
+        headers=hr_auth,
+        json={"survey_id": demo_survey_id, "intent": "dept_low_score_and_causes", "department_id": depts["営業部"]},
+    )
+    assert_error(res, 502, "AI_NUMBER_MISMATCH")
+
+
 def test_qa24_closed_survey_cannot_be_answered(api: TestClient, tokens: dict[str, dict], hr_auth: dict[str, str]) -> None:
     created = api.post("/api/v1/surveys", headers=hr_auth, json={"title": f"QA close {uuid4().hex[:8]}"})
     survey_id = created.json()["id"]

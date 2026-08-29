@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db import get_db
 from app.deps import current_user
 from app.errors import ApiError
@@ -13,7 +14,15 @@ from app.rate_limit import check_ai_rate
 from app.schemas import IntentIn, SummaryIn
 from app.services.analytics import _survey_for_company, collect_quotes, cross_tab
 from app.services.authz import ANALYST_ROLES, assert_department_in_scope, is_dept_manager_only, require_any_role
-from app.services.llm import INTENT_SCHEMA, INTENT_SYSTEM, SUMMARY_SCHEMA, SUMMARY_SYSTEM, complete_json
+from app.services.llm import (
+    INTENT_SCHEMA,
+    INTENT_SYSTEM,
+    SUMMARY_SCHEMA,
+    SUMMARY_SYSTEM,
+    assert_model_numbers,
+    assert_summary_has_no_counts,
+    complete_json,
+)
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -41,6 +50,7 @@ def free_text_summary(
     nos = list(db.scalars(select(User.employee_no).where(User.company_id == user.company_id)))
     quotes = collect_quotes(db, survey, [body.department_id], nos)
     parsed = complete_json(SUMMARY_SYSTEM, {"quotes": quotes}, SUMMARY_SCHEMA, "summary_result")
+    assert_summary_has_no_counts(parsed)
     run = AiRun(
         company_id=user.company_id,
         survey_id=survey.id,
@@ -50,7 +60,7 @@ def free_text_summary(
         query_snapshot={"survey_id": str(survey.id), "department_id": str(body.department_id)},
         evidence={"quotes": quotes},
         conclusion=parsed.get("negative_tendency"),
-        model=None,
+        model=settings.llm_model or None,
         status=AiRunStatus.succeeded,
     )
     db.add(run)
@@ -126,6 +136,7 @@ def run_intent(body: IntentIn, user: Annotated[User, Depends(current_user)], db:
         evidence["company_avg_by_fe_id"] = bench
         evidence["benchmark_avg_by_fe_id"] = bench
     parsed = complete_json(INTENT_SYSTEM, {"evidence": evidence}, INTENT_SCHEMA, "intent_result")
+    assert_model_numbers(parsed, evidence)
     conclusion = parsed.get("conclusion") or ""
     run = AiRun(
         company_id=user.company_id,
@@ -137,6 +148,7 @@ def run_intent(body: IntentIn, user: Annotated[User, Depends(current_user)], db:
         query_snapshot={"survey_id": str(survey.id), "intent": body.intent, "department_id": str(body.department_id)},
         evidence=evidence,
         conclusion=conclusion,
+        model=settings.llm_model or None,
         status=AiRunStatus.succeeded,
     )
     db.add(run)

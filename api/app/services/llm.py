@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+import re
 
 import httpx
 
 from app.config import settings
 from app.errors import ApiError
+
+NUMBER_RE = re.compile(r"\d+(?:\.\d+)?")
+TOLERANCE = 0.05
 
 INTENT_SCHEMA = {
     "type": "object",
@@ -38,15 +42,49 @@ SUMMARY_SCHEMA = {
 
 INTENT_SYSTEM = (
     "あなたは社内ES調査の分析補助です。与えられたevidence JSONの数字だけを根拠に、"
-    "日本語で短い結論を書いてください。数字を捏造してはいけません。evidenceに無い部署や数値に言及しないでください。"
+    "日本語で短い定性的な結論を書いてください。conclusion に数値・平均点・人数を書かないでください。"
+    "数字の提示は evidence 側で行います。evidence に無い部署や項目に言及しないでください。"
     "出力はJSONで conclusion のみです。"
 )
 
 SUMMARY_SYSTEM = (
     "あなたは社内ES調査の自由記述を要約します。与えられたquotesだけを使い、"
-    "高频课题を topics に、否定的傾向を negative_tendency に日本語で書いてください。"
-    "人数の具体値は出さないでください。count_hint は high/mid/low のみです。"
+    "高頻度の課題を topics に、否定的傾向を negative_tendency に日本語で書いてください。"
+    "人数や点数の具体値は出さないでください。count_hint は high/mid/low のみです。"
 )
+
+
+def _collect_numbers(value: object, into: list[float]) -> None:
+    if isinstance(value, bool) or value is None:
+        return
+    if isinstance(value, (int, float)):
+        into.append(float(value))
+        return
+    if isinstance(value, dict):
+        for item in value.values():
+            _collect_numbers(item, into)
+        return
+    if isinstance(value, list):
+        for item in value:
+            _collect_numbers(item, into)
+
+
+def assert_model_numbers(parsed: dict, evidence: dict) -> None:
+    blob = json.dumps(parsed, ensure_ascii=False)
+    if "avg_score" in blob:
+        raise ApiError("AI_NUMBER_MISMATCH")
+    allowed: list[float] = []
+    _collect_numbers(evidence, allowed)
+    for raw in NUMBER_RE.findall(blob):
+        val = float(raw)
+        if not any(abs(val - item) <= TOLERANCE for item in allowed):
+            raise ApiError("AI_NUMBER_MISMATCH")
+
+
+def assert_summary_has_no_counts(parsed: dict) -> None:
+    blob = json.dumps(parsed, ensure_ascii=False)
+    if NUMBER_RE.search(blob):
+        raise ApiError("AI_NUMBER_MISMATCH")
 
 
 def complete_json(system: str, user_payload: dict, schema: dict, schema_name: str) -> dict:
