@@ -10,7 +10,7 @@ import {
 import { Avatar, Breadcrumb, Button, Drawer, Grid, Layout, Menu, Tooltip, Typography, type MenuProps } from "antd";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { canAnalyze, canWriteOrg, canWriteSurvey, type Me, type RoleCode } from "../session";
 
 type MenuItem = NonNullable<MenuProps["items"]>[number];
@@ -78,6 +78,7 @@ type AppShellProps = {
 export function AppShell({ me, onLogout, children }: AppShellProps) {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const screens = Grid.useBreakpoint();
   const isMobile = screens.md === false;
   const isDesktop = screens.xl === true;
@@ -99,7 +100,7 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
   const appName = t("appName");
   const brandMark = appName.trim().slice(0, 1);
 
-  const menuItems = useMemo((): MenuItem[] => {
+  const { groupedItems, flatItems } = useMemo(() => {
     const item = (key: string, icon: ReactNode, to: string, label: string): MenuItem => ({
       key,
       icon,
@@ -111,32 +112,34 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
     if (canWriteSurvey(me) || canAnalyze(me)) {
       mainChildren.push(item("/surveys", <FormOutlined />, "/surveys", t("nav.surveys")));
     }
-    const items: MenuItem[] = [{ type: "group", label: t("nav.group.main"), children: mainChildren }];
-
-    if (canWriteOrg(me)) {
-      items.push({
-        type: "group",
-        label: t("nav.group.organization"),
-        children: [
+    const orgChildren: MenuItem[] = canWriteOrg(me)
+      ? [
           item("/org/departments", <ApartmentOutlined />, "/org/departments", t("nav.dept")),
           item("/org/users", <TeamOutlined />, "/org/users", t("nav.users")),
-        ],
-      });
-    }
-
-    if (canAnalyze(me)) {
-      items.push({
-        type: "group",
-        label: t("nav.group.analytics"),
-        children: [
+        ]
+      : [];
+    const analyticsChildren: MenuItem[] = canAnalyze(me)
+      ? [
           item("/analytics/dashboard", <BarChartOutlined />, "/analytics/dashboard", t("nav.dashboard")),
           item("/analytics/intent", <RobotOutlined />, "/analytics/intent", t("nav.analyze")),
-        ],
-      });
+        ]
+      : [];
+
+    const groupedItems: MenuItem[] = [{ type: "group", label: t("nav.group.main"), children: mainChildren }];
+    if (orgChildren.length > 0) {
+      groupedItems.push({ type: "group", label: t("nav.group.organization"), children: orgChildren });
+    }
+    if (analyticsChildren.length > 0) {
+      groupedItems.push({ type: "group", label: t("nav.group.analytics"), children: analyticsChildren });
     }
 
-    return items;
+    return { groupedItems, flatItems: [...mainChildren, ...orgChildren, ...analyticsChildren] };
   }, [me, t]);
+
+  const onMenuClick: MenuProps["onClick"] = ({ key }) => {
+    setDrawerOpen(false);
+    if (key.startsWith("/")) navigate(key);
+  };
 
   const crumbItems = crumbsFor(location.pathname, t).map((c) => ({
     title: c.href ? <Link to={c.href}>{c.title}</Link> : c.title,
@@ -145,24 +148,15 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
   const firstRole = me.roles[0]?.role;
   const roleText = firstRole && firstRole in ROLE_I18N ? t(ROLE_I18N[firstRole]) : null;
 
-  const siderInner = (
-    <>
-      <div className="app-shell-brand">
-        <span className="app-shell-brand-text">{appName}</span>
-        <Tooltip title={appName} placement="right">
-          <span className="app-shell-brand-mark" aria-label={appName}>
-            {brandMark}
-          </span>
-        </Tooltip>
-      </div>
-      <Menu
-        theme="dark"
-        mode="inline"
-        selectedKeys={[selected]}
-        items={menuItems}
-        onClick={() => setDrawerOpen(false)}
-      />
-    </>
+  const brand = (
+    <div className="app-shell-brand">
+      <span className="app-shell-brand-text">{appName}</span>
+      <Tooltip title={appName} placement="right">
+        <span className="app-shell-brand-mark" aria-label={appName}>
+          {brandMark}
+        </span>
+      </Tooltip>
+    </div>
   );
 
   const showSider = !isMobile;
@@ -180,7 +174,15 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
           collapsible
           className="app-shell-sider"
         >
-          {siderInner}
+          {brand}
+          <Menu
+            theme="dark"
+            mode="inline"
+            inlineCollapsed={collapsed}
+            selectedKeys={[selected]}
+            items={collapsed ? flatItems : groupedItems}
+            onClick={onMenuClick}
+          />
         </Layout.Sider>
       ) : (
         <Drawer
@@ -191,7 +193,15 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
           closable={false}
           styles={{ body: { padding: 0, background: "#1B2433" }, header: { display: "none" } }}
         >
-          {siderInner}
+          {brand}
+          <Menu
+            theme="dark"
+            mode="inline"
+            inlineCollapsed={false}
+            selectedKeys={[selected]}
+            items={groupedItems}
+            onClick={onMenuClick}
+          />
         </Drawer>
       )}
       <Layout>

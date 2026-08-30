@@ -139,6 +139,18 @@
     "readOnlyNoRole": "このアンケートを編集する権限がありません。",
     "undo": "元に戻す",
     "redo": "やり直す",
+    "back": "一覧へ戻る",
+    "leave": "離れる",
+    "pageDescription": "設問を追加し、内容を編集して保存します。",
+    "emptyCanvas": "まだ設問がありません。左の部品から追加してください。",
+    "dragHandle": "並べ替え",
+    "maxLength": "最大文字数",
+    "titleLength": "タイトルは1〜200文字で入力してください。",
+    "section": {
+      "basic": "基本設定",
+      "answer": "回答設定",
+      "options": "選択肢"
+    },
     "title": "見出し",
     "paragraph": "説明",
     "radio": "単一選択",

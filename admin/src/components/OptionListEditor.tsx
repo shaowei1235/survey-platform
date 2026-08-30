@@ -32,9 +32,9 @@ export function OptionListEditor({ feId, type, componentProps, locked }: Props) 
   return (
     <div>
       <Typography.Text>{t("editor.options")}</Typography.Text>
-      <Space direction="vertical" style={{ width: "100%", marginTop: 8 }} size="small">
+      <Space direction="vertical" className="option-list" size="small">
         {options.map((opt, index) => (
-          <div key={`${feId}-${index}`} style={{ border: "1px solid #f0f0f0", borderRadius: 6, padding: 8 }}>
+          <div key={`${feId}-${index}`} className="option-row">
             <Input
               disabled={locked}
               value={opt.label}
