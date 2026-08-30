@@ -7,7 +7,7 @@ import {
   RobotOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import { Avatar, Breadcrumb, Button, Drawer, Grid, Layout, Menu, Typography, type MenuProps } from "antd";
+import { Avatar, Breadcrumb, Button, Drawer, Grid, Layout, Menu, Tooltip, Typography, type MenuProps } from "antd";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "react-router-dom";
@@ -96,17 +96,20 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
   }, [location.pathname]);
 
   const selected = selectedMenuKey(location.pathname);
+  const appName = t("appName");
+  const brandMark = appName.trim().slice(0, 1);
 
   const menuItems = useMemo((): MenuItem[] => {
-    const mainChildren: MenuItem[] = [
-      { key: "/", icon: <HomeOutlined />, label: <Link to="/">{t("nav.home")}</Link> },
-    ];
+    const item = (key: string, icon: ReactNode, to: string, label: string): MenuItem => ({
+      key,
+      icon,
+      title: label,
+      label: <Link to={to}>{label}</Link>,
+    });
+
+    const mainChildren: MenuItem[] = [item("/", <HomeOutlined />, "/", t("nav.home"))];
     if (canWriteSurvey(me) || canAnalyze(me)) {
-      mainChildren.push({
-        key: "/surveys",
-        icon: <FormOutlined />,
-        label: <Link to="/surveys">{t("nav.surveys")}</Link>,
-      });
+      mainChildren.push(item("/surveys", <FormOutlined />, "/surveys", t("nav.surveys")));
     }
     const items: MenuItem[] = [{ type: "group", label: t("nav.group.main"), children: mainChildren }];
 
@@ -115,16 +118,8 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
         type: "group",
         label: t("nav.group.organization"),
         children: [
-          {
-            key: "/org/departments",
-            icon: <ApartmentOutlined />,
-            label: <Link to="/org/departments">{t("nav.dept")}</Link>,
-          },
-          {
-            key: "/org/users",
-            icon: <TeamOutlined />,
-            label: <Link to="/org/users">{t("nav.users")}</Link>,
-          },
+          item("/org/departments", <ApartmentOutlined />, "/org/departments", t("nav.dept")),
+          item("/org/users", <TeamOutlined />, "/org/users", t("nav.users")),
         ],
       });
     }
@@ -134,16 +129,8 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
         type: "group",
         label: t("nav.group.analytics"),
         children: [
-          {
-            key: "/analytics/dashboard",
-            icon: <BarChartOutlined />,
-            label: <Link to="/analytics/dashboard">{t("nav.dashboard")}</Link>,
-          },
-          {
-            key: "/analytics/intent",
-            icon: <RobotOutlined />,
-            label: <Link to="/analytics/intent">{t("nav.analyze")}</Link>,
-          },
+          item("/analytics/dashboard", <BarChartOutlined />, "/analytics/dashboard", t("nav.dashboard")),
+          item("/analytics/intent", <RobotOutlined />, "/analytics/intent", t("nav.analyze")),
         ],
       });
     }
@@ -160,7 +147,14 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
 
   const siderInner = (
     <>
-      <div className="app-shell-brand">{t("appName")}</div>
+      <div className="app-shell-brand">
+        <span className="app-shell-brand-text">{appName}</span>
+        <Tooltip title={appName} placement="right">
+          <span className="app-shell-brand-mark" aria-label={appName}>
+            {brandMark}
+          </span>
+        </Tooltip>
+      </div>
       <Menu
         theme="dark"
         mode="inline"

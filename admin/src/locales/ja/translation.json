@@ -16,7 +16,11 @@
     }
   },
   "common": {
-    "openMenu": "メニューを開く"
+    "openMenu": "メニューを開く",
+    "clearFilters": "絞り込みを解除",
+    "noData": "—",
+    "retry": "再試行",
+    "cancel": "キャンセル"
   },
   "breadcrumb": {
     "edit": "編集"
@@ -29,11 +33,22 @@
     "noAnswerRole": "回答権限がありません。"
   },
   "home": {
-    "welcome": "メニューを選択してください。"
+    "welcome": "メニューを選択してください。",
+    "description": "利用可能な機能を選択してください。",
+    "roles": "現在の役割",
+    "entry": {
+      "surveys": "アンケートの作成、公開、終了を管理します。",
+      "departments": "組織の部門を管理します。",
+      "users": "従業員の所属と役割を管理します。",
+      "dashboard": "部門別の集計結果を確認します。",
+      "analyze": "固定分析と自由記述の要約を確認します。"
+    }
   },
   "survey": {
     "list": "アンケート一覧",
+    "listDescription": "アンケートの作成、公開、終了を管理します。",
     "edit": "アンケート編集",
+    "view": "表示",
     "create": "新規作成",
     "newTitle": "新規アンケート",
     "publish": "公開",
@@ -41,7 +56,26 @@
     "save": "保存",
     "title": "タイトル",
     "statusLabel": "状態",
+    "updatedAt": "更新日時",
+    "actions": "操作",
     "unsavedConfirm": "未保存の変更があります。閉じますか？",
+    "filter": {
+      "keyword": "タイトルで検索",
+      "status": "状態",
+      "allStatus": "すべて"
+    },
+    "empty": {
+      "default": "アンケートはまだありません。",
+      "filtered": "条件に一致するアンケートはありません。"
+    },
+    "publishConfirm": {
+      "title": "このアンケートを公開しますか？",
+      "description": "公開すると従業員が回答を開始できます。公開後は設問構成を変更できません。"
+    },
+    "closeConfirm": {
+      "title": "このアンケートを終了しますか？",
+      "description": "終了すると従業員は新たに回答を送信できなくなります。"
+    },
     "status": {
       "draft": "下書き",
       "published": "公開中",

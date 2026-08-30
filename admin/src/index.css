@@ -52,6 +52,53 @@ body {
   line-height: 1.4;
 }
 
+.app-shell-brand-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-shell-brand-mark {
+  display: none;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #3155a6;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.app-shell-sider.ant-layout-sider-collapsed .app-shell-brand {
+  padding: 12px 0;
+}
+
+.app-shell-sider.ant-layout-sider-collapsed .app-shell-brand-text {
+  display: none;
+}
+
+.app-shell-sider.ant-layout-sider-collapsed .app-shell-brand-mark {
+  display: flex;
+}
+
+.app-shell-sider.ant-layout-sider-collapsed .ant-menu-item-group-title {
+  display: none;
+  height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.app-shell-sider.ant-layout-sider-collapsed .ant-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 0;
+}
+
 .app-shell-header.ant-layout-header {
   display: flex;
   align-items: center;
@@ -161,6 +208,98 @@ body {
   min-height: 48px;
 }
 
+.home-role-hint {
+  margin-top: -4px;
+  margin-bottom: 16px;
+}
+
+.home-entry-link {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-entry-link:focus-visible {
+  outline: 2px solid #3155a6;
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+.home-entry-card {
+  position: relative;
+  height: 100%;
+  min-height: 148px;
+  padding: 20px 44px 20px 20px;
+  background: #fff;
+  border: 1px solid #e4e9f0;
+  border-radius: 10px;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-entry-link:hover .home-entry-card {
+  border-color: #3155a6;
+  box-shadow: 0 1px 4px rgba(23, 32, 51, 0.06);
+}
+
+.home-entry-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 12px;
+  color: #3155a6;
+  font-size: 18px;
+  background: #e8eef8;
+  border-radius: 8px;
+}
+
+.home-entry-title {
+  font-weight: 600;
+  color: #172033;
+}
+
+.home-entry-desc {
+  margin-top: 6px;
+  color: #667085;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.home-entry-arrow {
+  position: absolute;
+  top: 22px;
+  right: 16px;
+  color: #667085;
+  font-size: 12px;
+}
+
+.filter-control {
+  min-width: 200px;
+  flex: 1 1 200px;
+  max-width: 360px;
+}
+
+.filter-control-status {
+  min-width: 160px;
+  width: 160px;
+}
+
+.survey-table-wrap {
+  overflow-x: auto;
+}
+
+.survey-title-cell {
+  display: inline-block;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+
 @media (max-width: 767px) {
   .app-shell-content {
     padding: 16px;
@@ -168,5 +307,9 @@ body {
 
   .app-shell-user-text {
     display: none;
+  }
+
+  .survey-title-cell {
+    max-width: 200px;
   }
 }
