@@ -444,3 +444,97 @@ def test_export_sales_manager_cannot_export_dev(
 def test_employee_cannot_export(api: TestClient, sales_emp_auth: dict[str, str], demo_survey_id: str) -> None:
     res = api.get("/api/v1/analytics/cross-tab.xlsx", headers=sales_emp_auth, params={"survey_id": demo_survey_id})
     assert_error(res, 403, "FORBIDDEN_ROLE")
+
+
+def _completion_by_name(res) -> dict[str, dict]:
+    return {row["department_name"]: row for row in res.json()["rows"]}
+
+
+def test_completion_sales_rollup(
+    api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]
+) -> None:
+    res = api.get(
+        "/api/v1/analytics/completion",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["営業部"]},
+    )
+    assert res.status_code == 200, res.text
+    assert "E-SALES" not in res.text
+    assert "高橋" not in res.text
+    row = res.json()["rows"][0]
+    assert row["department_name"] == "営業部"
+    assert row["masked"] is False
+    assert row["eligible"] == 9
+    assert row["submitted"] == 8
+    assert row["unanswered"] == 1
+    assert row["rate"] == 0.8889
+
+
+def test_completion_ka1_visible_ka2_masked(
+    api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]
+) -> None:
+    ka1 = api.get(
+        "/api/v1/analytics/completion",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["第一営業課"]},
+    )
+    assert ka1.status_code == 200, ka1.text
+    row = ka1.json()["rows"][0]
+    assert row["masked"] is False
+    assert row["eligible"] == 5
+    assert row["submitted"] == 5
+    assert row["unanswered"] == 0
+    ka2 = api.get(
+        "/api/v1/analytics/completion",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["第二営業課"]},
+    )
+    assert ka2.status_code == 200, ka2.text
+    row = ka2.json()["rows"][0]
+    assert row["masked"] is True
+    assert row["eligible"] == 3
+    assert row["submitted"] is None
+    assert row["unanswered"] is None
+    assert row["rate"] is None
+
+
+def test_completion_dev_unanswered_visible(
+    api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]
+) -> None:
+    res = api.get(
+        "/api/v1/analytics/completion",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["開発一課"]},
+    )
+    assert res.status_code == 200, res.text
+    row = res.json()["rows"][0]
+    assert row["masked"] is False
+    assert row["eligible"] == 5
+    assert row["submitted"] == 0
+    assert row["unanswered"] == 5
+    assert row["rate"] == 0.0
+
+
+def test_completion_sales_manager_hides_n_on_ka2(
+    api: TestClient, sales_mgr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]
+) -> None:
+    res = api.get("/api/v1/analytics/completion", headers=sales_mgr_auth, params={"survey_id": demo_survey_id})
+    assert res.status_code == 200, res.text
+    by_name = _completion_by_name(res)
+    assert set(by_name) == {"営業部", "第一営業課", "第二営業課"}
+    assert by_name["第二営業課"]["masked"] is True
+    assert by_name["第二営業課"]["eligible"] is None
+    assert by_name["第二営業課"]["unanswered"] is None
+    forbidden = api.get(
+        "/api/v1/analytics/completion",
+        headers=sales_mgr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["開発部"]},
+    )
+    assert_error(forbidden, 403, "FORBIDDEN_SCOPE")
+
+
+def test_employee_cannot_view_completion(
+    api: TestClient, sales_emp_auth: dict[str, str], demo_survey_id: str
+) -> None:
+    res = api.get("/api/v1/analytics/completion", headers=sales_emp_auth, params={"survey_id": demo_survey_id})
+    assert_error(res, 403, "FORBIDDEN_ROLE")

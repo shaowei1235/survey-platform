@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.errors import ApiError
-from app.models import AnswerItem, Department, Response, Survey, SurveyStatus, User, UserGeneration
+from app.models import AnswerItem, Department, Response, Survey, SurveyStatus, User, UserGeneration, UserRole, UserRoleCode
 from app.services.authz import ANALYST_ROLES, assert_department_in_scope, descendant_ids, is_dept_manager_only, require_any_role, scope_department_ids
 from app.services.components import likert_questions, option_score
 from app.services.deidentify import sanitize_quote
@@ -152,6 +152,68 @@ def cross_tab(
         "rows": rows,
         "charts": [{"id": "bar_dept_scores", "type": "bar", "title_key": "chart.dept_scores"}],
     }
+
+
+def completion(db: Session, user: User, survey_id: UUID, department_id: UUID | None) -> dict:
+    require_any_role(user, ANALYST_ROLES)
+    survey = _survey_for_company(db, user, survey_id)
+    scope = scope_department_ids(db, user)
+    if department_id:
+        assert_department_in_scope(db, user, department_id)
+        row_depts = [department_id]
+    else:
+        row_depts = scope
+    all_depts = {
+        d.id: d for d in db.scalars(select(Department).where(Department.company_id == user.company_id)).all()
+    }
+    row_depts = sorted(
+        row_depts,
+        key=lambda did: (all_depts[did].sort_order, all_depts[did].name) if did in all_depts else (999, ""),
+    )
+    subtrees = {did: descendant_ids(db, user.company_id, [did]) for did in row_depts}
+    employee_ids = select(UserRole.user_id).where(UserRole.role == UserRoleCode.employee)
+    people = db.scalars(
+        select(User).where(
+            User.company_id == user.company_id,
+            User.is_active.is_(True),
+            User.id.in_(employee_ids),
+        )
+    ).all()
+    submitted_ids = set(db.scalars(select(Response.user_id).where(Response.survey_id == survey.id)).all())
+    eligible_by: dict[UUID, int] = defaultdict(int)
+    submitted_by: dict[UUID, int] = defaultdict(int)
+    for person in people:
+        eligible_by[person.department_id] += 1
+        if person.id in submitted_ids:
+            submitted_by[person.department_id] += 1
+    hide_n = is_dept_manager_only(user)
+    min_n = settings.min_cell_n
+    rows = []
+    for dept_id in row_depts:
+        dept = all_depts.get(dept_id)
+        if dept is None:
+            continue
+        member = subtrees[dept_id]
+        child_ids = [mid for mid in member if mid != dept_id]
+        eligible = sum(eligible_by[mid] for mid in member)
+        submitted = sum(submitted_by[mid] for mid in member)
+        unanswered = eligible - submitted
+        own_n = eligible_by[dept_id]
+        child_ns = [eligible_by[cid] for cid in child_ids]
+        masked = _mask_roll_up(eligible, min_n, own_n, child_ns)
+        rate = round(submitted / eligible, 4) if eligible and not masked else None
+        rows.append(
+            {
+                "department_id": dept_id,
+                "department_name": dept.name,
+                "eligible": None if (masked and hide_n) else eligible,
+                "submitted": None if masked else submitted,
+                "unanswered": None if masked else unanswered,
+                "rate": rate,
+                "masked": masked,
+            }
+        )
+    return {"survey_id": survey.id, "rows": rows}
 
 
 def build_intent_evidence(db: Session, user: User, survey: Survey, department_id: UUID) -> dict:

@@ -18,6 +18,16 @@ const BAR_COLORS = ["#3155A6", "#17745A", "#9A6811", "#5B7FCF", "#B13A44", "#667
 type DashCell = { fe_id: string; n: number | null; avg_score: number | null; masked: boolean };
 type DashRow = { department_id: string; department_name: string; cells: DashCell[] };
 type DashResult = { questions: Array<{ fe_id: string; title: string }>; rows: DashRow[] };
+type CompletionRow = {
+  department_id: string;
+  department_name: string;
+  eligible: number | null;
+  submitted: number | null;
+  unanswered: number | null;
+  rate: number | null;
+  masked: boolean;
+};
+type CompletionResult = { rows: CompletionRow[] };
 type DashFilters = {
   survey_id?: string;
   department_id?: string;
@@ -78,6 +88,10 @@ function formatScore(value: number) {
   return value.toFixed(1);
 }
 
+function formatRate(value: number) {
+  return `${(value * 100).toFixed(1)}%`;
+}
+
 function DashTooltip({ active, payload, label }: { active?: boolean; payload?: TipItem[]; label?: string }) {
   if (!active || !payload) return null;
   const items = payload.filter((item) => typeof item.value === "number" && item.value >= 1);
@@ -103,6 +117,7 @@ export function DashboardPage() {
   const [depts, setDepts] = useState<Array<{ id: string; name: string; parent_id: string | null; sort_order: number }>>([]);
   const [grades, setGrades] = useState<Array<{ id: string; name: string }>>([]);
   const [result, setResult] = useState<DashResult | null>(null);
+  const [completion, setCompletion] = useState<CompletionResult | null>(null);
   const [lastQuery, setLastQuery] = useState<DashFilters | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -119,12 +134,19 @@ export function DashboardPage() {
     setQuerying(true);
     setQueryError(null);
     try {
-      const { data } = await api.get("/analytics/cross-tab", { params: compactParams(values) });
-      setResult(data);
-      setLastQuery(compactParams(values) as DashFilters);
+      const params = compactParams(values);
+      const completionParams = compactParams({ survey_id: values.survey_id, department_id: values.department_id });
+      const [tab, status] = await Promise.all([
+        api.get("/analytics/cross-tab", { params }),
+        api.get("/analytics/completion", { params: completionParams }),
+      ]);
+      setResult(tab.data);
+      setCompletion(status.data);
+      setLastQuery(params as DashFilters);
       setQueryError(null);
     } catch (e) {
       setResult(null);
+      setCompletion(null);
       setLastQuery(null);
       if (!isReauthRedirecting()) setQueryError(apiMessageKey(e));
     } finally {
@@ -333,6 +355,51 @@ export function DashboardPage() {
                   </div>
                 </DataPanel>
               </div>
+              {completion && completion.rows.length > 0 ? (
+                <div className="dash-table-panel">
+                  <DataPanel title={t("dash.completionTitle")} description={t("dash.completionHint")}>
+                    <div className="dash-table-wrap">
+                      <Table
+                        rowKey="department_id"
+                        dataSource={completion.rows}
+                        pagination={false}
+                        columns={[
+                          {
+                            title: t("org.dept"),
+                            dataIndex: "department_name",
+                            width: 160,
+                            ellipsis: true,
+                          },
+                          {
+                            title: t("dash.eligible"),
+                            width: 96,
+                            render: (_: unknown, row: CompletionRow) =>
+                              row.eligible == null ? <span className="dash-masked">{t("dash.masked")}</span> : row.eligible,
+                          },
+                          {
+                            title: t("dash.submitted"),
+                            width: 96,
+                            render: (_: unknown, row: CompletionRow) =>
+                              row.submitted == null ? <span className="dash-masked">{t("dash.masked")}</span> : row.submitted,
+                          },
+                          {
+                            title: t("dash.unanswered"),
+                            width: 96,
+                            render: (_: unknown, row: CompletionRow) =>
+                              row.unanswered == null ? <span className="dash-masked">{t("dash.masked")}</span> : row.unanswered,
+                          },
+                          {
+                            title: t("dash.rate"),
+                            width: 96,
+                            render: (_: unknown, row: CompletionRow) =>
+                              row.rate == null ? <span className="dash-masked">{t("dash.masked")}</span> : formatRate(row.rate),
+                          },
+                        ]}
+                      />
+                    </div>
+                  </DataPanel>
+                </div>
+              ) : null}
             </>
           ) : null}
         </>

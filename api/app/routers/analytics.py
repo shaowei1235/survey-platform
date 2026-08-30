@@ -20,6 +20,7 @@ from app.services.analytics import (
     build_cross_tab_xlsx,
     build_intent_evidence,
     collect_quotes,
+    completion,
     content_disposition,
     cross_tab,
     cross_tab_xlsx_filename,
@@ -100,6 +101,16 @@ def export_cross_tab(
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": content_disposition(filename)},
     )
+
+
+@router.get("/completion")
+def get_completion(
+    user: Annotated[User, Depends(current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    survey_id: UUID,
+    department_id: UUID | None = None,
+) -> dict:
+    return completion(db, user, survey_id, department_id)
 
 
 @router.post("/free-text-summary")
