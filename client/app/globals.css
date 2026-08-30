@@ -1,3 +1,5 @@
+@import "../components/survey-fill.css";
+
 html,
 body {
   margin: 0;
@@ -98,83 +100,6 @@ body {
   margin-bottom: 8px;
 }
 
-.fill-attr-alert {
-  margin-bottom: 20px;
-}
-
-.fill-progress {
-  margin-bottom: 24px;
-}
-
-.fill-progress-label {
-  margin-bottom: 8px;
-  color: #667085;
-  font-size: 13px;
-}
-
-.survey-static-block {
-  margin-bottom: 16px;
-}
-
-.question-card {
-  margin-bottom: 16px;
-  padding: 16px 20px;
-  background: #fff;
-  border: 1px solid #e4e9f0;
-  border-radius: 10px;
-}
-
-.question-card.is-answered {
-  border-color: #c5d0de;
-}
-
-.question-card.is-error {
-  border-color: #b13a44;
-}
-
-.question-card-num {
-  margin-bottom: 8px;
-  color: #667085;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.answer-field {
-  min-width: 0;
-}
-
-.answer-field .ant-input,
-.answer-field .ant-input-affix-wrapper,
-.answer-field textarea.ant-input {
-  width: 100%;
-}
-
-.answer-field-error {
-  display: block;
-  margin-top: 8px;
-}
-
-.client-choice .ant-radio-wrapper,
-.client-choice .ant-checkbox-wrapper {
-  align-items: flex-start;
-  min-height: 40px;
-  padding: 8px 0;
-  white-space: normal;
-}
-
-.client-choice .ant-checkbox-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.fill-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 8px;
-}
-
 .client-done-panel {
   max-width: 560px;
   margin: 24px auto 0;
@@ -207,14 +132,6 @@ body {
 
   .survey-card .ant-card-body {
     padding: 8px 14px 12px;
-  }
-
-  .question-card {
-    padding: 14px 16px;
-  }
-
-  .fill-actions .ant-btn {
-    width: 100%;
   }
 
   .client-done-panel .ant-btn {

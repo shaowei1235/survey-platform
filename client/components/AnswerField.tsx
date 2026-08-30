@@ -1,10 +1,11 @@
 "use client";
 
 import { Checkbox, Input, Radio, Space, Typography } from "antd";
-import type { ComponentItem } from "../lib/api";
+
+export type FillComponent = { fe_id: string; type: string; props: Record<string, unknown> };
 
 type Props = {
-  item: ComponentItem;
+  item: FillComponent;
   value: unknown;
   onChange: (value: unknown) => void;
   error?: string;
@@ -36,7 +37,10 @@ export function AnswerField({ item, value, onChange, error }: Props) {
     return (
       <div className="answer-field client-choice">
         {heading}
-        <Radio.Group value={value} onChange={(e) => onChange(e.target.value)}>
+        <Radio.Group
+          value={typeof value === "string" || typeof value === "number" ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+        >
           <Space direction="vertical">
             {options.map((o) => (
               <Radio key={o.value} value={o.value}>

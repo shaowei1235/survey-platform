@@ -10,6 +10,7 @@ import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
 import { StatusTag } from "../components/StatusTag";
 import { SurveyEditor } from "../components/SurveyEditor";
+import { SurveyFillPreview } from "../components/SurveyFillPreview";
 import { editorActions, type RootState } from "../store";
 import { validateComponentList, withNormalizedChoices } from "../choiceOptions";
 import { canWriteSurvey, type Me } from "../session";
@@ -35,6 +36,7 @@ export function SurveyEditPage({ me }: { me: Me }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const load = () => {
     if (!id) {
@@ -152,6 +154,7 @@ export function SurveyEditPage({ me }: { me: Me }) {
         backLabel={t("editor.back")}
         extra={
           <Space wrap>
+            <Button onClick={() => setPreviewOpen(true)}>{t("editor.preview")}</Button>
             <Button disabled={locked || !canUndo} onClick={() => dispatch(ActionCreators.undo())}>
               {t("editor.undo")}
             </Button>
@@ -166,6 +169,12 @@ export function SurveyEditPage({ me }: { me: Me }) {
       />
       {lockMessage ? <Alert className="editor-lock-alert" type="info" showIcon message={t(lockMessage)} /> : null}
       <SurveyEditor locked={locked} />
+      <SurveyFillPreview
+        open={previewOpen}
+        title={present.title.trim() || t("survey.newTitle")}
+        components={present.componentList}
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   );
 }

@@ -1,22 +1,15 @@
 "use client";
 
-import { Alert, App, Button, Empty, Progress, Typography } from "antd";
+import { Alert, App, Button } from "antd";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AnswerField } from "../../../components/AnswerField";
 import { ClientErrorState } from "../../../components/ClientErrorState";
 import { ClientLoadingState } from "../../../components/ClientLoadingState";
-import { QuestionCard } from "../../../components/QuestionCard";
+import { ANSWERABLE, SurveyFillView, isEmptyValue } from "../../../components/SurveyFillView";
 import { useSurveySession } from "../../../components/SurveySessionContext";
 import { apiMessageKey, consumeUnauthenticated, getSurvey, submitSurvey, type ComponentItem } from "../../../lib/api";
 import { getAccess } from "../../../lib/session";
 import { t } from "../../../lib/i18n";
-
-const ANSWERABLE = new Set(["radio", "checkbox", "input", "textarea"]);
-
-function isEmptyValue(value: unknown) {
-  return value === undefined || value === "" || (Array.isArray(value) && value.length === 0);
-}
 
 export default function FillPage() {
   const { id } = useParams<{ id: string }>();
@@ -63,8 +56,6 @@ export default function FillPage() {
     [components],
   );
   const total = answerableItems.length;
-  const answeredCount = answerableItems.filter((c) => !isEmptyValue(values[c.fe_id])).length;
-  const percent = total === 0 ? 0 : Math.round((answeredCount / total) * 100);
   const hasAnswers = answerableItems.some((c) => !isEmptyValue(values[c.fe_id]));
 
   useEffect(() => {
@@ -165,8 +156,6 @@ export default function FillPage() {
     });
   };
 
-  let questionNo = 0;
-
   return (
     <div className="client-page">
       <Button type="link" className="client-back-link" onClick={onBack}>
@@ -177,51 +166,26 @@ export default function FillPage() {
         <ClientErrorState message={t(loadError)} onRetry={() => void load()} retryLabel={t("answer.retry")} />
       ) : null}
       {!loading && !loadError ? (
-        <>
-          <Typography.Title level={3}>{title}</Typography.Title>
-          <Alert className="fill-attr-alert" message={t("answer.attrBound")} />
-          <div className="fill-progress">
-            <div className="fill-progress-label">
-              {t("answer.progress")}
-              {" · "}
-              {t("answer.answered")} {answeredCount} / {total}
+        <SurveyFillView
+          title={title}
+          components={components}
+          values={values}
+          fieldErrors={fieldErrors}
+          onChange={setFieldValue}
+          labels={{
+            progress: t("answer.progress"),
+            answered: t("answer.answered"),
+            noQuestions: t("answer.noQuestions"),
+          }}
+          banner={<Alert className="fill-attr-alert" message={t("answer.attrBound")} />}
+          footer={
+            <div className="fill-actions">
+              <Button type="primary" loading={submitting} disabled={submitting || total === 0} onClick={onSubmit}>
+                {t("answer.submit")}
+              </Button>
             </div>
-            <Progress percent={percent} showInfo={false} />
-          </div>
-          {total === 0 ? <Empty description={t("answer.noQuestions")} /> : null}
-          {components.map((c) => {
-            if (!ANSWERABLE.has(c.type)) {
-              return (
-                <div key={c.fe_id} className="survey-static-block">
-                  <AnswerField item={c} value={undefined} onChange={() => undefined} />
-                </div>
-              );
-            }
-            questionNo += 1;
-            const error = fieldErrors[c.fe_id];
-            return (
-              <QuestionCard
-                key={c.fe_id}
-                id={`question-${c.fe_id}`}
-                number={questionNo}
-                answered={!isEmptyValue(values[c.fe_id])}
-                error={Boolean(error)}
-              >
-                <AnswerField
-                  item={c}
-                  value={values[c.fe_id]}
-                  error={error}
-                  onChange={(v) => setFieldValue(c.fe_id, v)}
-                />
-              </QuestionCard>
-            );
-          })}
-          <div className="fill-actions">
-            <Button type="primary" loading={submitting} disabled={submitting || total === 0} onClick={onSubmit}>
-              {t("answer.submit")}
-            </Button>
-          </div>
-        </>
+          }
+        />
       ) : null}
     </div>
   );

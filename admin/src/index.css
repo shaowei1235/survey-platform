@@ -432,6 +432,15 @@ body {
   margin-bottom: 16px;
 }
 
+.survey-preview-drawer .ant-drawer-body {
+  background: #f5f7fa;
+}
+
+.survey-preview-drawer .survey-fill-view {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
 .editor-layout {
   display: grid;
   grid-template-columns: minmax(170px, 190px) minmax(360px, 1fr) minmax(260px, 300px);

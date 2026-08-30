@@ -12,10 +12,14 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
+    "baseUrl": ".",
     "resolveJsonModule": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@survey-fill/*": ["../client/components/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../client/components/AnswerField.tsx", "../client/components/QuestionCard.tsx", "../client/components/SurveyFillView.tsx"]
 }
