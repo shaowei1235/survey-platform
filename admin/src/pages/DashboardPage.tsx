@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, apiMessageKey, isReauthRedirecting } from "../api";
 import { deptSelectOptions } from "../deptOptions";
+import { pickDefaultAnalyzableSurvey, type AnalyzableSurvey } from "../surveyPick";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -113,7 +114,7 @@ function DashTooltip({ active, payload, label }: { active?: boolean; payload?: T
 export function DashboardPage() {
   const { t } = useTranslation();
   const [form] = Form.useForm<DashFilters>();
-  const [surveys, setSurveys] = useState<Array<{ id: string; title: string }>>([]);
+  const [surveys, setSurveys] = useState<AnalyzableSurvey[]>([]);
   const [depts, setDepts] = useState<Array<{ id: string; name: string; parent_id: string | null; sort_order: number }>>([]);
   const [grades, setGrades] = useState<Array<{ id: string; name: string }>>([]);
   const [result, setResult] = useState<DashResult | null>(null);
@@ -160,15 +161,16 @@ export function DashboardPage() {
     setLoadError(null);
     try {
       const [s, d, g] = await Promise.all([api.get("/surveys"), api.get("/departments"), api.get("/job-grades")]);
-      const analyzable = s.data.items.filter((i: { status: string }) => i.status !== "draft");
+      const analyzable = (s.data.items as AnalyzableSurvey[]).filter((i) => i.status !== "draft");
       setSurveys(analyzable);
       setDepts(d.data.items);
       setGrades(g.data.items);
       setLoadError(null);
       const selected = form.getFieldValue("survey_id") as string | undefined;
-      if (!selected && analyzable.length > 0 && !autoQueryOnceRef.current) {
+      const preferred = pickDefaultAnalyzableSurvey(analyzable);
+      if (!selected && preferred && !autoQueryOnceRef.current) {
         autoQueryOnceRef.current = true;
-        const survey_id = analyzable[0].id;
+        const survey_id = preferred.id;
         form.setFieldsValue({ survey_id });
         setLoading(false);
         await loadCrossTab({ survey_id });

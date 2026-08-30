@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, apiMessageKey, isReauthRedirecting, streamAnalytics } from "../api";
 import { deptSelectOptions } from "../deptOptions";
+import { pickDefaultAnalyzableSurvey, type AnalyzableSurvey } from "../surveyPick";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -62,7 +63,7 @@ export function AnalyzePage() {
   const { t } = useTranslation();
   const screens = Grid.useBreakpoint();
   const [form] = Form.useForm();
-  const [surveys, setSurveys] = useState<Array<{ id: string; title: string }>>([]);
+  const [surveys, setSurveys] = useState<AnalyzableSurvey[]>([]);
   const [depts, setDepts] = useState<Array<{ id: string; name: string; parent_id: string | null; sort_order: number }>>([]);
   const [mode, setMode] = useState<PaneKind>("intent");
   const [intentCache, setIntentCache] = useState<Record<string, IntentResult>>({});
@@ -86,9 +87,14 @@ export function AnalyzePage() {
     setLoadError(null);
     try {
       const [s, d] = await Promise.all([api.get("/surveys"), api.get("/departments")]);
-      setSurveys(s.data.items.filter((i: { status: string }) => i.status !== "draft"));
+      const analyzable = (s.data.items as AnalyzableSurvey[]).filter((i) => i.status !== "draft");
+      setSurveys(analyzable);
       setDepts(d.data.items);
       setLoadError(null);
+      if (!form.getFieldValue("survey_id")) {
+        const preferred = pickDefaultAnalyzableSurvey(analyzable);
+        if (preferred) form.setFieldsValue({ survey_id: preferred.id });
+      }
     } catch (e) {
       if (!isReauthRedirecting()) setLoadError(apiMessageKey(e));
     } finally {

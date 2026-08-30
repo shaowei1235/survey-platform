@@ -3,13 +3,13 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import current_user
 from app.errors import ApiError
-from app.models import Survey, SurveyStatus, User
+from app.models import Response, Survey, SurveyStatus, User
 from app.schemas import SurveyCreate, SurveyListItem, SurveyOut, SurveyPatch
 from app.services.authz import ADMIN_ROLES, SURVEY_WRITE_ROLES, require_any_role
 from app.services.components import has_answerable, validate_component_list
@@ -32,12 +32,26 @@ def _out(survey: Survey) -> SurveyOut:
 @router.get("", response_model=dict)
 def list_surveys(user: Annotated[User, Depends(current_user)], db: Annotated[Session, Depends(get_db)]) -> dict:
     require_any_role(user, ADMIN_ROLES)
-    items = db.scalars(
-        select(Survey).where(Survey.company_id == user.company_id).order_by(Survey.updated_at.desc())
+    response_count = (
+        select(func.count()).select_from(Response).where(Response.survey_id == Survey.id).scalar_subquery()
+    )
+    rows = db.execute(
+        select(Survey, response_count)
+        .where(Survey.company_id == user.company_id)
+        .order_by(Survey.updated_at.desc())
     ).all()
     return {
         "items": [
-            SurveyListItem(id=s.id, title=s.title, status=s.status.value, updated_at=s.updated_at).model_dump() for s in items
+            SurveyListItem(
+                id=survey.id,
+                title=survey.title,
+                status=survey.status.value,
+                updated_at=survey.updated_at,
+                published_at=survey.published_at,
+                closed_at=survey.closed_at,
+                response_count=count or 0,
+            ).model_dump()
+            for survey, count in rows
         ]
     }
 

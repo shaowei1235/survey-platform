@@ -126,6 +126,9 @@ class SurveyListItem(BaseModel):
     title: str
     status: str
     updated_at: datetime | None
+    published_at: datetime | None = None
+    closed_at: datetime | None = None
+    response_count: int = 0
 
 
 class AnswerIn(BaseModel):
