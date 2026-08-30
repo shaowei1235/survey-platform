@@ -204,7 +204,7 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
           />
         </Drawer>
       )}
-      <Layout>
+      <Layout className="app-shell-main">
         <Layout.Header className="app-shell-header">
           {showMenuButton ? (
             <Button
