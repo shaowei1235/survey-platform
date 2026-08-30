@@ -11,10 +11,9 @@ from sqlalchemy import delete, select
 
 from app.db import SessionLocal
 from app.models import AiRun, AnswerItem, Response, Survey, SurveyStatus, User
-from seed import DRAFT_TITLE, ES_QUESTIONS, likert
+from seed import DEMO_TITLE, DRAFT_TITLE, ES_QUESTIONS, REALISTIC_SURVEY_TITLES, likert
 
-DEMO_TITLE = "2026年度 従業員満足度調査（デモ）"
-KEEP_TITLES = {DRAFT_TITLE, DEMO_TITLE}
+KEEP_TITLES = {DRAFT_TITLE, DEMO_TITLE, *REALISTIC_SURVEY_TITLES}
 
 SALES1_SCORES = {
     "E-SALES-01": ["4", "5", "3", "4", "4"],
