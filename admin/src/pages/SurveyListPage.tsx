@@ -2,7 +2,7 @@ import { Button, Input, Popconfirm, Select, Space, Table, Tooltip, message } fro
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { api, apiMessageKey } from "../api";
+import { api, apiMessageKey, isReauthRedirecting } from "../api";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -51,6 +51,7 @@ export function SurveyListPage({ me }: { me: Me }) {
       setRows(data.items);
       setLoadError(null);
     } catch (e) {
+      if (isReauthRedirecting()) return;
       setLoadError(apiMessageKey(e));
     } finally {
       if (!silent) setLoading(false);
@@ -68,7 +69,7 @@ export function SurveyListPage({ me }: { me: Me }) {
       const { data } = await api.post("/surveys", { title: t("survey.newTitle") });
       navigate(`/surveys/${data.id}/edit`);
     } catch (e) {
-      message.error(t(apiMessageKey(e)));
+      if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
     } finally {
       setCreating(false);
     }
@@ -81,7 +82,7 @@ export function SurveyListPage({ me }: { me: Me }) {
       await api.post(`/surveys/${id}/${action}`);
       await load(true);
     } catch (e) {
-      message.error(t(apiMessageKey(e)));
+      if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
     } finally {
       setActingId(null);
     }
@@ -213,7 +214,8 @@ export function SurveyListPage({ me }: { me: Me }) {
                           <Space wrap>
                             <Button
                               size="small"
-                              type={canEdit ? "primary" : "link"}
+                              type="primary"
+                              ghost={!canEdit}
                               onClick={() => openSurvey(row.id)}
                             >
                               {canEdit ? t("breadcrumb.edit") : t("survey.view")}

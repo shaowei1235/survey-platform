@@ -78,9 +78,19 @@ body {
   gap: 16px;
 }
 
+.survey-card .ant-card-head {
+  min-height: 0;
+  padding: 12px 16px 0;
+}
+
 .survey-card .ant-card-head-title {
   white-space: normal;
   overflow-wrap: anywhere;
+  padding: 0;
+}
+
+.survey-card .ant-card-body {
+  padding: 12px 16px 14px;
 }
 
 .client-back-link {
@@ -189,6 +199,14 @@ body {
 
   .survey-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .survey-card .ant-card-head {
+    padding: 10px 14px 0;
+  }
+
+  .survey-card .ant-card-body {
+    padding: 8px 14px 12px;
   }
 
   .question-card {

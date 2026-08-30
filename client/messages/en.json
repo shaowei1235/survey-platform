@@ -30,6 +30,7 @@
     "cancel": "Cancel",
     "leaveConfirmTitle": "You have unsaved answers",
     "leaveConfirm": "Your answers will not be saved. Return to the list?",
+    "logoutConfirm": "Your answers will not be saved. Log out?",
     "thanksHint": "You can check other surveys from the list."
   },
   "error": {

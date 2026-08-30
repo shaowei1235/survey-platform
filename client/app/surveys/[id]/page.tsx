@@ -7,7 +7,8 @@ import { AnswerField } from "../../../components/AnswerField";
 import { ClientErrorState } from "../../../components/ClientErrorState";
 import { ClientLoadingState } from "../../../components/ClientLoadingState";
 import { QuestionCard } from "../../../components/QuestionCard";
-import { apiMessageKey, getSurvey, submitSurvey, type ComponentItem } from "../../../lib/api";
+import { useSurveySession } from "../../../components/SurveySessionContext";
+import { apiMessageKey, consumeUnauthenticated, getSurvey, submitSurvey, type ComponentItem } from "../../../lib/api";
 import { getAccess } from "../../../lib/session";
 import { t } from "../../../lib/i18n";
 
@@ -21,6 +22,7 @@ export default function FillPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { modal, message } = App.useApp();
+  const { setDirty } = useSurveySession();
   const [title, setTitle] = useState("");
   const [components, setComponents] = useState<ComponentItem[]>([]);
   const [values, setValues] = useState<Record<string, unknown>>({});
@@ -43,12 +45,10 @@ export default function FillPage() {
       setTitle(data.title);
       setComponents(data.component_list);
     } catch (e) {
-      const key = apiMessageKey(e);
-      if (key === "error.unauthenticated") {
-        router.replace("/login");
+      if (consumeUnauthenticated(e, { error: (text) => message.error(text), replace: (path) => router.replace(path) })) {
         return;
       }
-      setLoadError(key);
+      setLoadError(apiMessageKey(e));
     } finally {
       setLoading(false);
     }
@@ -66,6 +66,11 @@ export default function FillPage() {
   const answeredCount = answerableItems.filter((c) => !isEmptyValue(values[c.fe_id])).length;
   const percent = total === 0 ? 0 : Math.round((answeredCount / total) * 100);
   const hasAnswers = answerableItems.some((c) => !isEmptyValue(values[c.fe_id]));
+
+  useEffect(() => {
+    setDirty(hasAnswers && !skipLeaveRef.current);
+    return () => setDirty(false);
+  }, [hasAnswers, setDirty]);
 
   useEffect(() => {
     if (!hasAnswers) return;
@@ -98,8 +103,12 @@ export default function FillPage() {
     try {
       await submitSurvey(id, answers);
       skipLeaveRef.current = true;
+      setDirty(false);
       router.replace(`/surveys/${id}/done`);
     } catch (e) {
+      if (consumeUnauthenticated(e, { error: (text) => message.error(text), replace: (path) => router.replace(path) })) {
+        return;
+      }
       message.error(t(apiMessageKey(e)));
     } finally {
       submittingRef.current = false;
@@ -150,6 +159,7 @@ export default function FillPage() {
       maskTransitionName: "",
       onOk: () => {
         skipLeaveRef.current = true;
+        setDirty(false);
         router.push("/surveys");
       },
     });

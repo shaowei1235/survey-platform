@@ -2,7 +2,7 @@ import { Button, Form, Select, Table, Tooltip as AntTooltip } from "antd";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { api, apiMessageKey } from "../api";
+import { api, apiMessageKey, isReauthRedirecting } from "../api";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -93,7 +93,7 @@ export function DashboardPage() {
       setQueryError(null);
     } catch (e) {
       setResult(null);
-      setQueryError(apiMessageKey(e));
+      if (!isReauthRedirecting()) setQueryError(apiMessageKey(e));
     } finally {
       queryingRef.current = false;
       setQuerying(false);
@@ -120,7 +120,7 @@ export function DashboardPage() {
         return;
       }
     } catch (e) {
-      setLoadError(apiMessageKey(e));
+      if (!isReauthRedirecting()) setLoadError(apiMessageKey(e));
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,26 @@
 import { clearTokens, getAccess, setTokens } from "./session";
+import { t } from "./i18n";
 
 export type ApiErrorBody = { error_code: string; message_key: string };
 
 const BASE = "/api/v1";
+
+let reauthInFlight = false;
+
+export function consumeUnauthenticated(
+  error: unknown,
+  handlers: { error: (text: string) => void; replace: (path: string) => void },
+): boolean {
+  if (apiMessageKey(error) !== "error.unauthenticated") return false;
+  if (reauthInFlight) return true;
+  reauthInFlight = true;
+  handlers.error(t("error.unauthenticated"));
+  window.setTimeout(() => {
+    clearTokens();
+    handlers.replace("/login");
+  }, 1000);
+  return true;
+}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
@@ -39,6 +57,7 @@ export async function login(employee_no: string, password: string) {
     body: JSON.stringify({ employee_no, password }),
   });
   setTokens(data.access_token, data.refresh_token);
+  reauthInFlight = false;
   return data;
 }
 

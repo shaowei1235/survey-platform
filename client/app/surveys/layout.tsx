@@ -1,10 +1,5 @@
-import { ClientHeader } from "../../components/ClientHeader";
+import { SurveysShell } from "../../components/SurveysShell";
 
 export default function SurveysLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <ClientHeader />
-      {children}
-    </>
-  );
+  return <SurveysShell>{children}</SurveysShell>;
 }

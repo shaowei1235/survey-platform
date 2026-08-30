@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { api, apiMessageKey, streamAnalytics } from "../api";
+import { api, apiMessageKey, isReauthRedirecting, streamAnalytics } from "../api";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -89,7 +89,7 @@ export function AnalyzePage() {
       setDepts(d.data.items);
       setLoadError(null);
     } catch (e) {
-      setLoadError(apiMessageKey(e));
+      if (!isReauthRedirecting()) setLoadError(apiMessageKey(e));
     } finally {
       setLoading(false);
     }
@@ -184,7 +184,7 @@ export function AnalyzePage() {
             }
           },
           onError: (err) => {
-            message.error(t(err.message_key));
+            if (!isReauthRedirecting()) message.error(t(err.message_key));
             if (kind === "intent") {
               setIntentCache((prev) => ({ ...prev, [paneKey]: { ...prev[paneKey], markdown: "" } }));
             } else {
@@ -196,7 +196,7 @@ export function AnalyzePage() {
       );
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
-      message.error(t(apiMessageKey(e)));
+      if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
     } finally {
       if (gen === genRef.current) setBusyKind(null);
     }

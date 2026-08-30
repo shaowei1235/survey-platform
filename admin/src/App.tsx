@@ -1,8 +1,10 @@
 import { Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { fetchMe, logout } from "./api";
+import { App as AntdApp } from "antd";
+import { fetchMe, isReauthRedirecting, logout, onReauthRequired } from "./api";
 import { AppShell } from "./components/AppShell";
 import { LoadingState } from "./components/LoadingState";
+import i18n from "./i18n";
 import { AnalyzePage } from "./pages/AnalyzePage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { DeptPage } from "./pages/DeptPage";
@@ -27,6 +29,7 @@ function Shell() {
     void fetchMe()
       .then((data) => setMe(data))
       .catch(() => {
+        if (isReauthRedirecting()) return;
         logout();
         setMe(null);
       })
@@ -34,6 +37,7 @@ function Shell() {
   }, []);
 
   if (!ready) return <LoadingState />;
+  if (isReauthRedirecting()) return <LoadingState />;
   if (!getAccess() || !me || !isAdminRole(me)) {
     if (location.pathname !== "/login") return <Navigate to="/login" replace />;
     return <LoginPage />;
@@ -62,6 +66,19 @@ function Shell() {
 }
 
 export function App() {
+  const { message } = AntdApp.useApp();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    return onReauthRequired(() => {
+      message.error(i18n.t("error.unauthenticated"));
+      window.setTimeout(() => {
+        logout();
+        navigate("/login", { replace: true });
+      }, 1000);
+    });
+  }, [message, navigate]);
+
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />

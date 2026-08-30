@@ -1,17 +1,18 @@
 "use client";
 
-import { Button, Card, Empty, Typography } from "antd";
+import { App, Button, Card, Empty, Typography } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ClientErrorState } from "../../components/ClientErrorState";
 import { ClientLoadingState } from "../../components/ClientLoadingState";
-import { apiMessageKey, listSurveys } from "../../lib/api";
+import { apiMessageKey, consumeUnauthenticated, listSurveys } from "../../lib/api";
 import { getAccess } from "../../lib/session";
 import { t } from "../../lib/i18n";
 
 export default function SurveyListPage() {
   const router = useRouter();
+  const { message } = App.useApp();
   const [items, setItems] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -27,12 +28,10 @@ export default function SurveyListPage() {
       const data = await listSurveys();
       setItems(data.items);
     } catch (e) {
-      const key = apiMessageKey(e);
-      if (key === "error.unauthenticated") {
-        router.replace("/login");
+      if (consumeUnauthenticated(e, { error: (text) => message.error(text), replace: (path) => router.replace(path) })) {
         return;
       }
-      setLoadError(key);
+      setLoadError(apiMessageKey(e));
     } finally {
       setLoading(false);
     }

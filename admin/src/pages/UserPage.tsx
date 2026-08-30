@@ -1,7 +1,7 @@
 import { Button, Drawer, Form, Grid, Input, Modal, Select, Space, Table, Tag, message } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiMessageKey } from "../api";
+import { api, apiMessageKey, isReauthRedirecting } from "../api";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -86,6 +86,7 @@ export function UserPage({ me }: { me: Me }) {
       setGrades(g.data.items);
       setLoadError(null);
     } catch (e) {
+      if (isReauthRedirecting()) return;
       setLoadError(apiMessageKey(e));
     } finally {
       if (!silent) setLoading(false);
@@ -215,7 +216,7 @@ export function UserPage({ me }: { me: Me }) {
       closeDrawer();
       await load(true);
     } catch (e) {
-      message.error(t(apiMessageKey(e)));
+      if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
     } finally {
       setSaving(false);
     }

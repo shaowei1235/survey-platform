@@ -1,7 +1,7 @@
 import { Button, Form, Input, Modal, Switch, Table, Tag, TreeSelect, message } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { api, apiMessageKey } from "../api";
+import { api, apiMessageKey, isReauthRedirecting } from "../api";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -81,6 +81,7 @@ export function DeptPage({ me }: { me: Me }) {
       setItems(data.items);
       setLoadError(null);
     } catch (e) {
+      if (isReauthRedirecting()) return;
       setLoadError(apiMessageKey(e));
     } finally {
       if (!silent) setLoading(false);
@@ -158,7 +159,7 @@ export function DeptPage({ me }: { me: Me }) {
       setSaving(false);
       closeModal();
     } catch (e) {
-      message.error(t(apiMessageKey(e)));
+      if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
       setSaving(false);
     }
   };

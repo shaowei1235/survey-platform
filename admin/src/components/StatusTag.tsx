@@ -17,5 +17,9 @@ export function StatusTag({ status }: StatusTagProps) {
   const { t } = useTranslation();
   const label = KNOWN.has(status) ? t(`survey.status.${status}`) : status;
   const color = STATUS_COLORS[status] ?? "#667085";
-  return <Tag color={color}>{label}</Tag>;
+  return (
+    <Tag className="status-tag" color={color}>
+      {label}
+    </Tag>
+  );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
-import { api, apiMessageKey } from "../api";
+import { api, apiMessageKey, isReauthRedirecting } from "../api";
 import { ErrorState } from "../components/ErrorState";
 import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
@@ -57,7 +57,7 @@ export function SurveyEditPage({ me }: { me: Me }) {
         setLoadError(null);
       })
       .catch((e) => {
-        setLoadError(apiMessageKey(e));
+        if (!isReauthRedirecting()) setLoadError(apiMessageKey(e));
       })
       .finally(() => setLoading(false));
   };
@@ -112,7 +112,7 @@ export function SurveyEditPage({ me }: { me: Me }) {
       dispatch(editorActions.markSaved());
       message.success(t("survey.save"));
     } catch (e) {
-      message.error(t(apiMessageKey(e)));
+      if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
     } finally {
       setSaving(false);
     }

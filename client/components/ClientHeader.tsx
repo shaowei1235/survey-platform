@@ -1,11 +1,21 @@
 "use client";
 
+import { App } from "antd";
 import { useRouter } from "next/navigation";
 import { logout } from "../lib/api";
 import { t } from "../lib/i18n";
+import { useSurveySession } from "./SurveySessionContext";
 
 export function ClientHeader() {
   const router = useRouter();
+  const { modal } = App.useApp();
+  const { dirty, setDirty } = useSurveySession();
+
+  const doLogout = () => {
+    setDirty(false);
+    logout();
+    router.replace("/login");
+  };
 
   return (
     <header className="client-header">
@@ -14,8 +24,19 @@ export function ClientHeader() {
         type="button"
         className="client-header-logout"
         onClick={() => {
-          logout();
-          router.replace("/login");
+          if (!dirty) {
+            doLogout();
+            return;
+          }
+          modal.confirm({
+            title: t("answer.leaveConfirmTitle"),
+            content: t("answer.logoutConfirm"),
+            okText: t("answer.logout"),
+            cancelText: t("answer.cancel"),
+            transitionName: "",
+            maskTransitionName: "",
+            onOk: doLogout,
+          });
         }}
       >
         {t("answer.logout")}

@@ -5,6 +5,26 @@ body {
   font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
 }
 
+.admin-login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 48px 16px 32px;
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+@media (min-width: 768px) {
+  .admin-login-wrap {
+    align-items: center;
+    padding: 24px 16px;
+  }
+}
+
 .analyze-md h1,
 .analyze-md h2,
 .analyze-md h3,
@@ -201,6 +221,7 @@ body {
 .filter-bar-fields {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   flex: 1;
   min-width: 0;
@@ -317,18 +338,33 @@ body {
 
 .filter-control {
   min-width: 200px;
-  flex: 1 1 200px;
+  flex: 1 1 220px;
   max-width: 360px;
 }
 
 .filter-control-status {
+  flex: 0 0 200px;
+  width: 200px;
   min-width: 160px;
-  width: 160px;
 }
 
 .survey-table-wrap,
 .org-table-wrap {
   overflow-x: auto;
+}
+
+.status-tag.ant-tag {
+  margin-inline-end: 0;
+  box-sizing: border-box;
+  width: 72px;
+  height: 24px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  font-size: 12px;
+  border: none;
 }
 
 .org-employee-no {
@@ -583,8 +619,13 @@ body {
   margin-bottom: 0;
 }
 
-.filter-bar-fields .ant-select {
+.filter-bar-fields .filter-control .ant-select,
+.filter-bar-fields .filter-control-status .ant-select {
   width: 100%;
+}
+
+.filter-bar-fields > .ant-select.filter-control-status {
+  width: 200px;
 }
 
 .dash-table-panel {
@@ -774,6 +815,10 @@ body {
 }
 
 @media (max-width: 767px) {
+  .admin-login-wrap {
+    padding-top: 32px;
+  }
+
   .app-shell-content {
     padding: 16px;
   }

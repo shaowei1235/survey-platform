@@ -3,6 +3,37 @@ import { clearTokens, getAccess, setTokens } from "./session";
 
 export type ApiErrorBody = { error_code: string; message_key: string };
 
+let reauthInFlight = false;
+let reauthHandler: (() => void) | null = null;
+
+export function isReauthRedirecting(): boolean {
+  return reauthInFlight;
+}
+
+export function notifyReauthRequired() {
+  if (reauthInFlight) return;
+  if (window.location.pathname === "/login") return;
+  reauthInFlight = true;
+  reauthHandler?.();
+}
+
+export function onReauthRequired(handler: () => void) {
+  reauthHandler = handler;
+  return () => {
+    if (reauthHandler === handler) reauthHandler = null;
+  };
+}
+
+function isLoginRequest(url: string | undefined) {
+  return typeof url === "string" && url.includes("/auth/login");
+}
+
+function isUnauthenticatedError(error: AxiosError<ApiErrorBody>) {
+  const status = error.response?.status;
+  const key = error.response?.data?.message_key;
+  return key === "error.unauthenticated" || (status === 401 && !key);
+}
+
 export const api = axios.create({ baseURL: "/api/v1" });
 
 api.interceptors.request.use((config) => {
@@ -13,7 +44,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (res) => res,
+  (error: AxiosError<ApiErrorBody>) => {
+    if (!isLoginRequest(error.config?.url) && isUnauthenticatedError(error)) {
+      notifyReauthRequired();
+    }
+    return Promise.reject(error);
+  },
+);
+
 export function apiMessageKey(error: unknown): string {
+  if (isReauthRedirecting()) return "error.unauthenticated";
   const body = (error as AxiosError<ApiErrorBody>).response?.data;
   if (body?.message_key) return body.message_key;
   return "error.generic";
@@ -69,6 +111,9 @@ export async function streamAnalytics(path: string, body: object, handlers: SseH
     } catch {
       data = undefined;
     }
+    if (res.status === 401 || data?.message_key === "error.unauthenticated") {
+      notifyReauthRequired();
+    }
     throw { response: { data } };
   }
   if (!res.body) {
@@ -87,6 +132,7 @@ export async function streamAnalytics(path: string, body: object, handlers: SseH
     },
     onError: (data) => {
       sawTerminal = true;
+      if (data.message_key === "error.unauthenticated") notifyReauthRequired();
       handlers.onError(data);
     },
   };
@@ -109,6 +155,7 @@ export async function streamAnalytics(path: string, body: object, handlers: SseH
 
 export async function login(employee_no: string, password: string) {
   const { data } = await api.post("/auth/login", { employee_no, password });
+  reauthInFlight = false;
   setTokens(data.access_token, data.refresh_token);
   return data;
 }
