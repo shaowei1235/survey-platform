@@ -8,7 +8,18 @@
     "users": "従業員",
     "dashboard": "分析ダッシュボード",
     "analyze": "固定分析",
-    "logout": "ログアウト"
+    "logout": "ログアウト",
+    "group": {
+      "main": "メイン",
+      "organization": "組織管理",
+      "analytics": "分析"
+    }
+  },
+  "common": {
+    "openMenu": "メニューを開く"
+  },
+  "breadcrumb": {
+    "edit": "編集"
   },
   "login": {
     "employeeNo": "社員番号",
