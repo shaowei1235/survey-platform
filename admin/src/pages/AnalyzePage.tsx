@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, apiMessageKey, isReauthRedirecting, streamAnalytics } from "../api";
+import { deptSelectOptions } from "../deptOptions";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -62,7 +63,7 @@ export function AnalyzePage() {
   const screens = Grid.useBreakpoint();
   const [form] = Form.useForm();
   const [surveys, setSurveys] = useState<Array<{ id: string; title: string }>>([]);
-  const [depts, setDepts] = useState<Array<{ id: string; name: string }>>([]);
+  const [depts, setDepts] = useState<Array<{ id: string; name: string; parent_id: string | null; sort_order: number }>>([]);
   const [mode, setMode] = useState<PaneKind>("intent");
   const [intentCache, setIntentCache] = useState<Record<string, IntentResult>>({});
   const [summaryCache, setSummaryCache] = useState<Record<string, SummaryResult>>({});
@@ -331,7 +332,7 @@ export function AnalyzePage() {
               />
             </Form.Item>
             <Form.Item name="department_id" label={t("analyze.department")} rules={[{ required: true }]} className="analyze-filter-dept">
-              <Select options={depts.map((d) => ({ value: d.id, label: d.name }))} />
+              <Select options={deptSelectOptions(depts)} />
             </Form.Item>
             <Form.Item label={t("analyze.mode")} className="analyze-filter-mode">
               <Segmented

@@ -2,6 +2,7 @@ import { Button, Drawer, Form, Grid, Input, Modal, Select, Space, Table, Tag, me
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { api, apiMessageKey, isReauthRedirecting } from "../api";
+import { deptSelectOptions } from "../deptOptions";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -25,7 +26,7 @@ type UserRow = {
   is_active: boolean;
   roles: RoleRow[];
 };
-type DeptOpt = { id: string; name: string; is_active: boolean };
+type DeptOpt = { id: string; name: string; parent_id: string | null; sort_order: number; is_active: boolean };
 type GradeOpt = { id: string; name: string };
 
 type UserFormValues = {
@@ -105,7 +106,7 @@ export function UserPage({ me }: { me: Me }) {
   const departmentOptions = useMemo(() => {
     const current = editing ? depts.find((d) => d.id === editing.department_id) : undefined;
     const list = current && !current.is_active ? [...activeDepts, current] : activeDepts;
-    return list.map((d) => ({ value: d.id, label: d.name }));
+    return deptSelectOptions(list);
   }, [activeDepts, depts, editing]);
 
   const filtered = useMemo(() => {
@@ -126,7 +127,7 @@ export function UserPage({ me }: { me: Me }) {
 
   const deptFilterOptions = useMemo(() => {
     const ids = new Set(users.map((u) => u.department_id));
-    return depts.filter((d) => ids.has(d.id)).map((d) => ({ value: d.id, label: d.name }));
+    return deptSelectOptions(depts.filter((d) => ids.has(d.id)));
   }, [users, depts]);
 
   const roleFilterOptions = useMemo(() => {

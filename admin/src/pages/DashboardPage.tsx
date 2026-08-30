@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, apiMessageKey, isReauthRedirecting } from "../api";
+import { deptSelectOptions } from "../deptOptions";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -71,7 +72,7 @@ export function DashboardPage() {
   const { t } = useTranslation();
   const [form] = Form.useForm<DashFilters>();
   const [surveys, setSurveys] = useState<Array<{ id: string; title: string }>>([]);
-  const [depts, setDepts] = useState<Array<{ id: string; name: string }>>([]);
+  const [depts, setDepts] = useState<Array<{ id: string; name: string; parent_id: string | null; sort_order: number }>>([]);
   const [grades, setGrades] = useState<Array<{ id: string; name: string }>>([]);
   const [result, setResult] = useState<DashResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,7 +174,7 @@ export function DashboardPage() {
                   allowClear
                   placeholder={t("org.dept")}
                   aria-label={t("org.dept")}
-                  options={depts.map((d) => ({ value: d.id, label: d.name }))}
+                  options={deptSelectOptions(depts)}
                 />
               </Form.Item>
               <Form.Item name="generation" className="filter-control-status">

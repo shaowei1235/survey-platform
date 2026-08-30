@@ -140,7 +140,7 @@
   },
   "dash": {
     "title": "分析ダッシュボード",
-    "pageDescription": "部署別の回答傾向を比較できます。",
+    "pageDescription": "部署別の回答傾向を比較できます。上位部署は配下の課を含めて集計し、回答数が5未満のセルは非開示です。",
     "empty": "表示できるデータがありません。",
     "masked": "非開示（n<5）",
     "load": "表示",
@@ -185,7 +185,7 @@
     "runAgain": "再分析",
     "summaryGenerate": "要約を生成",
     "summaryAgain": "再生成",
-    "pageDescription": "集計データに基づき、改善課題と原因を整理します。",
+    "pageDescription": "集計データに基づき、改善課題と原因を整理します。部門を選ぶと配下の課の回答も含めて集計します。",
     "result": "分析結果",
     "conditions": "分析条件",
     "status": "状態",

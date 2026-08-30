@@ -93,7 +93,7 @@ def test_qa09_submit_ignores_body_department(
         user = db.scalar(select(User).where(User.employee_no == "E-DEV-02"))
         row = db.scalar(select(Response).where(Response.survey_id == survey_id, Response.user_id == user.id))
         assert row is not None
-        assert str(row.department_id) == depts["開発部"]
+        assert str(row.department_id) == depts["開発一課"]
         assert str(row.department_id) != depts["営業部"]
     finally:
         db.close()
@@ -139,8 +139,11 @@ def test_qa13_sales_manager_unfiltered_rows(
     res = api.get("/api/v1/analytics/cross-tab", headers=sales_mgr_auth, params={"survey_id": demo_survey_id})
     assert res.status_code == 200, res.text
     names = {row["department_name"] for row in res.json()["rows"]}
-    assert names == {"営業部"}
-    assert all(row["department_id"] == depts["営業部"] for row in res.json()["rows"])
+    assert names == {"営業部", "第一営業課", "第二営業課"}
+    by_name = {row["department_name"]: row["department_id"] for row in res.json()["rows"]}
+    assert by_name["営業部"] == depts["営業部"]
+    assert by_name["第一営業課"] == depts["第一営業課"]
+    assert by_name["第二営業課"] == depts["第二営業課"]
 
 
 def test_qa14_employee_cannot_run_intent(
@@ -193,8 +196,35 @@ def test_qa_sales_scores_visible(api: TestClient, hr_auth: dict[str, str], demo_
         params={"survey_id": demo_survey_id, "department_id": depts["営業部"]},
     )
     assert res.status_code == 200, res.text
-    avgs = [c["avg_score"] for c in res.json()["rows"][0]["cells"]]
-    assert avgs == [4.2, 4.4, 3.2, 3.6, 4.4]
+    cells = res.json()["rows"][0]["cells"]
+    assert [c["avg_score"] for c in cells] == [4.25, 4.375, 3.0, 3.5, 4.375]
+    assert all(c["masked"] is False and c["n"] == 8 for c in cells)
+
+
+def test_qa_sales_ka1_scores_visible(api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]) -> None:
+    res = api.get(
+        "/api/v1/analytics/cross-tab",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["第一営業課"]},
+    )
+    assert res.status_code == 200, res.text
+    cells = res.json()["rows"][0]["cells"]
+    assert [c["avg_score"] for c in cells] == [4.2, 4.4, 3.2, 3.6, 4.4]
+    assert all(c["masked"] is False and c["n"] == 5 for c in cells)
+
+
+def test_qa_sales_ka2_masked(api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]) -> None:
+    res = api.get(
+        "/api/v1/analytics/cross-tab",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["第二営業課"]},
+    )
+    assert res.status_code == 200, res.text
+    cells = res.json()["rows"][0]["cells"]
+    assert cells
+    assert all(c["masked"] is True for c in cells)
+    assert all(c["avg_score"] is None for c in cells)
+    assert all(c["n"] == 3 for c in cells)
 
 
 def test_qa17_empty_survey_cross_tab_no_llm(api: TestClient, hr_auth: dict[str, str]) -> None:
@@ -252,6 +282,9 @@ def test_qa18_intent_mock_numbers_match_table(
     for item in lows:
         assert item["avg_score"] == by_id[item["fe_id"]]
     assert all("E-SALES-01" not in (q.get("text") or "") for q in body["evidence"].get("quotes") or [])
+    texts = [q.get("text") or "" for q in body["evidence"].get("quotes") or []]
+    assert any("月末の残業" in text for text in texts)
+    assert any("少人数のため" in text for text in texts)
 
 
 def test_qa20_intent_mock_invented_score(
@@ -307,7 +340,7 @@ def test_cross_tab_generation_filter(
         params={"survey_id": demo_survey_id, "department_id": depts["営業部"], "generation": "20s"},
     )
     assert visible.status_code == 200, visible.text
-    assert [c["avg_score"] for c in visible.json()["rows"][0]["cells"]] == [4.2, 4.4, 3.2, 3.6, 4.4]
+    assert [c["avg_score"] for c in visible.json()["rows"][0]["cells"]] == [4.25, 4.375, 3.0, 3.5, 4.375]
     hidden = api.get(
         "/api/v1/analytics/cross-tab",
         headers=hr_auth,
@@ -328,7 +361,7 @@ def test_cross_tab_job_grade_filter(
         params={"survey_id": demo_survey_id, "department_id": depts["営業部"], "job_grade_id": grades["一般"]},
     )
     assert visible.status_code == 200, visible.text
-    assert [c["avg_score"] for c in visible.json()["rows"][0]["cells"]] == [4.2, 4.4, 3.2, 3.6, 4.4]
+    assert [c["avg_score"] for c in visible.json()["rows"][0]["cells"]] == [4.25, 4.375, 3.0, 3.5, 4.375]
     hidden = api.get(
         "/api/v1/analytics/cross-tab",
         headers=hr_auth,

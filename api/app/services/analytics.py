@@ -10,9 +10,41 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.errors import ApiError
 from app.models import AnswerItem, Department, Response, Survey, SurveyStatus, User, UserGeneration
-from app.services.authz import ANALYST_ROLES, assert_department_in_scope, is_dept_manager_only, require_any_role, scope_department_ids
+from app.services.authz import ANALYST_ROLES, assert_department_in_scope, descendant_ids, is_dept_manager_only, require_any_role, scope_department_ids
 from app.services.components import likert_questions, option_score
 from app.services.deidentify import sanitize_quote
+
+
+def subtree_department_ids(db: Session, user: User, department_id: UUID) -> list[UUID]:
+    return descendant_ids(db, user.company_id, [department_id])
+
+
+def _mask_roll_up(n: int, min_n: int, own_n: int, child_ns: list[int]) -> bool:
+    if n < min_n:
+        return True
+    positive = [count for count in child_ns if count > 0]
+    if own_n == 0 and len(positive) == 1 and positive[0] < min_n:
+        return True
+    return False
+
+
+def _leaf_rows(rows: list[dict], depts: dict[UUID, Department]) -> list[dict]:
+    present = {r["department_id"] for r in rows}
+    children: dict[UUID, list[UUID]] = {}
+    for dept in depts.values():
+        if dept.parent_id:
+            children.setdefault(dept.parent_id, []).append(dept.id)
+
+    def has_present_descendant(dept_id: UUID) -> bool:
+        stack = list(children.get(dept_id, []))
+        while stack:
+            current = stack.pop()
+            if current in present:
+                return True
+            stack.extend(children.get(current, []))
+        return False
+
+    return [row for row in rows if not has_present_descendant(row["department_id"])]
 
 
 def _survey_for_company(db: Session, user: User, survey_id: UUID) -> Survey:
@@ -49,8 +81,17 @@ def cross_tab(
         row_depts = [department_id]
     else:
         row_depts = scope
+    all_depts = {
+        d.id: d for d in db.scalars(select(Department).where(Department.company_id == user.company_id)).all()
+    }
+    row_depts = sorted(
+        row_depts,
+        key=lambda did: (all_depts[did].sort_order, all_depts[did].name) if did in all_depts else (999, ""),
+    )
+    subtrees = {did: descendant_ids(db, user.company_id, [did]) for did in row_depts}
+    member_ids = list({mid for ids in subtrees.values() for mid in ids})
     questions = likert_questions(survey.component_list or [])
-    responses = _response_query(db, survey.id, row_depts, generation, job_grade_id)
+    responses = _response_query(db, survey.id, member_ids, generation, job_grade_id)
     resp_ids = [r.id for r in responses]
     items = []
     if resp_ids:
@@ -69,17 +110,23 @@ def cross_tab(
             continue
         scores[(dept_id, item.fe_id)].append(scored)
     hide_n = is_dept_manager_only(user)
-    depts = {d.id: d for d in db.scalars(select(Department).where(Department.id.in_(row_depts))).all()}
+    min_n = settings.min_cell_n
     rows = []
     for dept_id in row_depts:
-        dept = depts.get(dept_id)
+        dept = all_depts.get(dept_id)
         if dept is None:
             continue
+        member = subtrees[dept_id]
+        child_ids = [mid for mid in member if mid != dept_id]
         cells = []
         for q in questions:
-            values = scores.get((dept_id, q["fe_id"]), [])
+            values: list[int] = []
+            for mid in member:
+                values.extend(scores.get((mid, q["fe_id"]), []))
+            own_n = len(scores.get((dept_id, q["fe_id"]), []))
+            child_ns = [len(scores.get((cid, q["fe_id"]), [])) for cid in child_ids]
             n = len(values)
-            masked = n < settings.min_cell_n
+            masked = _mask_roll_up(n, min_n, own_n, child_ns)
             cell = {
                 "fe_id": q["fe_id"],
                 "n": None if (masked and hide_n) else n,
@@ -120,13 +167,17 @@ def build_intent_evidence(db: Session, user: User, survey: Survey, department_id
     low.sort(key=lambda x: x["avg_score"])
     low = low[:5]
     nos = list(db.scalars(select(User.employee_no).where(User.company_id == user.company_id)))
-    quotes = collect_quotes(db, survey, [department_id], nos)
+    quotes = collect_quotes(db, survey, subtree_department_ids(db, user, department_id), nos)
     dept = db.scalar(select(Department).where(Department.id == department_id))
     dept_avgs = {c["fe_id"]: c["avg_score"] for c in row["cells"] if not c["masked"]}
+    all_depts = {
+        d.id: d for d in db.scalars(select(Department).where(Department.company_id == user.company_id)).all()
+    }
+    bench_rows = _leaf_rows(company_tab["rows"], all_depts)
     bench: dict[str, float] = {}
     for q in tab["questions"]:
         vals = []
-        for r in company_tab["rows"]:
+        for r in bench_rows:
             cell = next(
                 (c for c in r["cells"] if c["fe_id"] == q["fe_id"] and not c["masked"] and c["avg_score"] is not None),
                 None,

@@ -15,7 +15,13 @@ from app.errors import ApiError
 from app.models import AiRun, AiRunKind, AiRunStatus, User
 from app.rate_limit import check_ai_rate
 from app.schemas import IntentIn, SummaryIn
-from app.services.analytics import _survey_for_company, build_intent_evidence, collect_quotes, cross_tab
+from app.services.analytics import (
+    _survey_for_company,
+    build_intent_evidence,
+    collect_quotes,
+    cross_tab,
+    subtree_department_ids,
+)
 from app.services.authz import ANALYST_ROLES, assert_department_in_scope, require_any_role
 from app.services.llm import (
     INTENT_SCHEMA,
@@ -68,7 +74,7 @@ def free_text_summary(
     survey = _survey_for_company(db, user, body.survey_id)
     assert_department_in_scope(db, user, body.department_id)
     nos = list(db.scalars(select(User.employee_no).where(User.company_id == user.company_id)))
-    quotes = collect_quotes(db, survey, [body.department_id], nos)
+    quotes = collect_quotes(db, survey, subtree_department_ids(db, user, body.department_id), nos)
     parsed = complete_json(SUMMARY_SYSTEM, {"quotes": quotes}, SUMMARY_SCHEMA, "summary_result")
     assert_summary_has_no_counts(parsed)
     run = AiRun(
@@ -196,7 +202,7 @@ def free_text_summary_stream(
     survey = _survey_for_company(db, user, body.survey_id)
     assert_department_in_scope(db, user, body.department_id)
     nos = list(db.scalars(select(User.employee_no).where(User.company_id == user.company_id)))
-    quotes = collect_quotes(db, survey, [body.department_id], nos)
+    quotes = collect_quotes(db, survey, subtree_department_ids(db, user, body.department_id), nos)
 
     def generate() -> Iterator[str]:
         yield _sse("evidence", {"quotes": quotes})

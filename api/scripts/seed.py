@@ -29,6 +29,8 @@ ES_QUESTIONS = [
     "知人にこの会社を勧めたい",
 ]
 
+DRAFT_TITLE = "2026年度 従業員満足度調査"
+
 
 def likert(fe_id: str, title: str) -> dict:
     return {
@@ -50,6 +52,10 @@ def add_user(
 ) -> User:
     existing = db.scalar(select(User).where(User.company_id == company_id, User.employee_no == employee_no))
     if existing:
+        existing.display_name = name
+        existing.department_id = dept_id
+        existing.job_grade_id = grade_id
+        existing.generation = generation
         return existing
     user = User(
         company_id=company_id,
@@ -81,6 +87,7 @@ def seed() -> None:
                 select(Department).where(Department.company_id == company.id, Department.name == name, Department.parent_id == parent)
             )
             if found:
+                found.sort_order = order
                 return found
             row = Department(company_id=company.id, parent_id=parent, name=name, sort_order=order)
             db.add(row)
@@ -88,10 +95,14 @@ def seed() -> None:
             return row
 
         root = dept("全社", None, 0)
-        keiei = dept("経営", root.id, 1)
-        jinji = dept("人事部", root.id, 2)
-        eigyo = dept("営業部", root.id, 3)
-        kaihatsu = dept("開発部", root.id, 4)
+        keiei = dept("経営", root.id, 10)
+        jinji = dept("人事部", root.id, 20)
+        eigyo = dept("営業部", root.id, 30)
+        eigyo1 = dept("第一営業課", eigyo.id, 31)
+        eigyo2 = dept("第二営業課", eigyo.id, 32)
+        kaihatsu = dept("開発部", root.id, 40)
+        kaihatsu1 = dept("開発一課", kaihatsu.id, 41)
+        kaihatsu2 = dept("開発二課", kaihatsu.id, 42)
 
         grades = {}
         for i, name in enumerate(["一般", "主任", "課長", "部長"], start=1):
@@ -123,18 +134,22 @@ def seed() -> None:
             [(UserRoleCode.dept_manager, kaihatsu.id), (UserRoleCode.employee, None)],
         )
         add_user(db, company.id, "E-HR-01", "人事担当", jinji.id, grades["一般"].id, UserGeneration.twenties, [(UserRoleCode.employee, None)])
-        for i in range(1, 6):
-            add_user(
-                db, company.id, f"E-SALES-0{i}", f"営業{i}", eigyo.id, grades["一般"].id, UserGeneration.twenties,
-                [(UserRoleCode.employee, None)],
-            )
-            add_user(
-                db, company.id, f"E-DEV-0{i}", f"開発{i}", kaihatsu.id, grades["一般"].id, UserGeneration.twenties,
-                [(UserRoleCode.employee, None)],
-            )
 
-        title = "2026年度 従業員満足度調査"
-        survey = db.scalar(select(Survey).where(Survey.company_id == company.id, Survey.title == title))
+        sales1 = [("E-SALES-01", "高橋"), ("E-SALES-02", "伊藤"), ("E-SALES-03", "渡辺"), ("E-SALES-04", "山本"), ("E-SALES-05", "中村")]
+        for no, name in sales1:
+            add_user(db, company.id, no, name, eigyo1.id, grades["一般"].id, UserGeneration.twenties, [(UserRoleCode.employee, None)])
+        sales2 = [("E-SALES-06", "小林"), ("E-SALES-07", "加藤"), ("E-SALES-08", "吉田")]
+        for no, name in sales2:
+            add_user(db, company.id, no, name, eigyo2.id, grades["一般"].id, UserGeneration.twenties, [(UserRoleCode.employee, None)])
+
+        dev1 = [("E-DEV-01", "松本"), ("E-DEV-02", "井上"), ("E-DEV-03", "木村"), ("E-DEV-04", "林"), ("E-DEV-05", "斎藤")]
+        for no, name in dev1:
+            add_user(db, company.id, no, name, kaihatsu1.id, grades["一般"].id, UserGeneration.twenties, [(UserRoleCode.employee, None)])
+        dev2 = [("E-DEV-06", "清水"), ("E-DEV-07", "山口"), ("E-DEV-08", "阿部"), ("E-DEV-09", "森"), ("E-DEV-10", "池田")]
+        for no, name in dev2:
+            add_user(db, company.id, no, name, kaihatsu2.id, grades["一般"].id, UserGeneration.twenties, [(UserRoleCode.employee, None)])
+
+        survey = db.scalar(select(Survey).where(Survey.company_id == company.id, Survey.title == DRAFT_TITLE))
         if survey is None:
             components = [
                 {"fe_id": "c_intro", "type": "paragraph", "props": {"title": "本調査は職場改善のために実施します。個人が特定される形では利用しません。"}},
@@ -148,7 +163,7 @@ def seed() -> None:
                     "props": {"title": "改善してほしい点", "required": False, "maxLength": 2000},
                 }
             )
-            db.add(Survey(company_id=company.id, title=title, component_list=components))
+            db.add(Survey(company_id=company.id, title=DRAFT_TITLE, component_list=components))
         db.commit()
         print("seed ok")
     finally:

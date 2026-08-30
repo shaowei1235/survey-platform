@@ -8,7 +8,7 @@ def test_qa08_fill_page_has_no_attribute_inputs() -> None:
     assert "department_id" not in text
     assert "job_grade" not in text
     assert "generation" not in text
-    assert "AnswerField" in text
+    assert "SurveyFillView" in text
 
 
 def test_qa23_en_locale_files_exist_without_switcher() -> None:
