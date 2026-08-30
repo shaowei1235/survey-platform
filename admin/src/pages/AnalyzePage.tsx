@@ -266,7 +266,11 @@ export function AnalyzePage() {
     <>
       <Form form={form} layout="vertical" style={{ maxWidth: 480 }}>
         <Form.Item name="survey_id" label={t("analyze.survey")} rules={[{ required: true }]}>
-          <Select options={surveys.map((s) => ({ value: s.id, label: s.title }))} />
+          <Select
+            showSearch
+            optionFilterProp="label"
+            options={surveys.map((s) => ({ value: s.id, label: s.title }))}
+          />
         </Form.Item>
         <Form.Item name="department_id" label={t("analyze.department")} rules={[{ required: true }]}>
           <Select options={depts.map((d) => ({ value: d.id, label: d.name }))} />

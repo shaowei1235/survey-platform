@@ -284,3 +284,56 @@ def test_qa24_closed_survey_cannot_be_answered(api: TestClient, tokens: dict[str
         json={"answers": [{"fe_id": "c_q1", "type": "radio", "value": "5"}]},
     )
     assert_error(post_res, 409, "NOT_PUBLISHED")
+
+
+def test_dept_manager_can_list_job_grades(api: TestClient, sales_mgr_auth: dict[str, str]) -> None:
+    res = api.get("/api/v1/job-grades", headers=sales_mgr_auth)
+    assert res.status_code == 200, res.text
+    names = {g["name"] for g in res.json()["items"]}
+    assert {"一般", "部長"} <= names
+
+
+def test_employee_cannot_list_job_grades(api: TestClient, sales_emp_auth: dict[str, str]) -> None:
+    res = api.get("/api/v1/job-grades", headers=sales_emp_auth)
+    assert_error(res, 403, "FORBIDDEN_ROLE")
+
+
+def test_cross_tab_generation_filter(
+    api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]
+) -> None:
+    visible = api.get(
+        "/api/v1/analytics/cross-tab",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["営業部"], "generation": "20s"},
+    )
+    assert visible.status_code == 200, visible.text
+    assert [c["avg_score"] for c in visible.json()["rows"][0]["cells"]] == [4.2, 4.4, 3.2, 3.6, 4.4]
+    hidden = api.get(
+        "/api/v1/analytics/cross-tab",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["営業部"], "generation": "50s"},
+    )
+    assert hidden.status_code == 200, hidden.text
+    cells = hidden.json()["rows"][0]["cells"]
+    assert all(c["masked"] is True and c["avg_score"] is None for c in cells)
+
+
+def test_cross_tab_job_grade_filter(
+    api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]
+) -> None:
+    grades = {g["name"]: g["id"] for g in api.get("/api/v1/job-grades", headers=hr_auth).json()["items"]}
+    visible = api.get(
+        "/api/v1/analytics/cross-tab",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["営業部"], "job_grade_id": grades["一般"]},
+    )
+    assert visible.status_code == 200, visible.text
+    assert [c["avg_score"] for c in visible.json()["rows"][0]["cells"]] == [4.2, 4.4, 3.2, 3.6, 4.4]
+    hidden = api.get(
+        "/api/v1/analytics/cross-tab",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["営業部"], "job_grade_id": grades["部長"]},
+    )
+    assert hidden.status_code == 200, hidden.text
+    cells = hidden.json()["rows"][0]["cells"]
+    assert all(c["masked"] is True and c["avg_score"] is None for c in cells)

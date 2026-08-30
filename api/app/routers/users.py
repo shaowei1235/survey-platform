@@ -11,7 +11,7 @@ from app.errors import ApiError
 from app.models import Department, JobGrade, User, UserGeneration, UserRole, UserRoleCode
 from app.schemas import RoleIn, RoleOut, UserCreate, UserOut, UserPatch
 from app.security import hash_password
-from app.services.authz import ORG_WRITE_ROLES, require_any_role
+from app.services.authz import ANALYST_ROLES, ORG_WRITE_ROLES, require_any_role
 
 router = APIRouter(tags=["users"])
 
@@ -48,7 +48,7 @@ def _to_out(user: User) -> UserOut:
 
 @router.get("/job-grades")
 def list_job_grades(user: Annotated[User, Depends(current_user)], db: Annotated[Session, Depends(get_db)]) -> dict:
-    require_any_role(user, ORG_WRITE_ROLES)
+    require_any_role(user, ANALYST_ROLES | ORG_WRITE_ROLES)
     items = db.scalars(
         select(JobGrade).where(JobGrade.company_id == user.company_id).order_by(JobGrade.sort_order)
     ).all()

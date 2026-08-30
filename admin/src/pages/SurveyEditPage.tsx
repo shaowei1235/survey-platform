@@ -23,6 +23,8 @@ export function SurveyEditPage({ me }: { me: Me }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const present = useSelector((s: RootState) => s.editor.present);
+  const canUndo = useSelector((s: RootState) => s.editor.past.length > 0);
+  const canRedo = useSelector((s: RootState) => s.editor.future.length > 0);
   const writable = canWriteSurvey(me);
   const locked = present.status !== "draft" || !writable;
   const lockMessage = lockMessageKey(present.status, writable);
@@ -93,10 +95,10 @@ export function SurveyEditPage({ me }: { me: Me }) {
           onChange={(e) => dispatch(editorActions.setTitle(e.target.value))}
         />
         <Tag>{t(`survey.status.${present.status}`)}</Tag>
-        <Button disabled={locked} onClick={() => dispatch(ActionCreators.undo())}>
+        <Button disabled={locked || !canUndo} onClick={() => dispatch(ActionCreators.undo())}>
           {t("editor.undo")}
         </Button>
-        <Button disabled={locked} onClick={() => dispatch(ActionCreators.redo())}>
+        <Button disabled={locked || !canRedo} onClick={() => dispatch(ActionCreators.redo())}>
           {t("editor.redo")}
         </Button>
         <Button type="primary" disabled={locked} onClick={() => void save()}>
