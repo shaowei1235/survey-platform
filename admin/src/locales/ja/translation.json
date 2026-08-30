@@ -33,15 +33,24 @@
     "noAnswerRole": "回答権限がありません。"
   },
   "home": {
-    "welcome": "メニューを選択してください。",
-    "description": "利用可能な機能を選択してください。",
+    "description": "いまの状況を確認して、次の作業に進みます。",
+    "greeting": "{{name}}さん",
     "roles": "現在の役割",
-    "entry": {
-      "surveys": "アンケートの作成、公開、終了を管理します。",
-      "departments": "組織の部門を管理します。",
-      "users": "従業員の所属と役割を管理します。",
-      "dashboard": "部門別の集計結果を確認します。",
-      "analyze": "固定分析と自由記述の要約を確認します。"
+    "openList": "一覧を見る",
+    "recent": "最近のアンケート",
+    "recentEmpty": "アンケートはまだありません。",
+    "stats": {
+      "draft": "下書き",
+      "published": "公開中",
+      "closed": "終了",
+      "departments": "部門",
+      "users": "従業員"
+    },
+    "next": {
+      "title": "次の操作",
+      "drafts": "下書きが{{count}}件あります。編集を続ける",
+      "analyze": "公開中のアンケートを固定分析で確認する",
+      "createFirst": "最初のアンケートを作成する"
     }
   },
   "survey": {
