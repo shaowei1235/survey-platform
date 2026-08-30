@@ -1,9 +1,14 @@
-import { Button, Card, Form, Progress, Select, Table, Tabs, Typography, message } from "antd";
+import { Button, Form, Grid, Progress, Segmented, Select, Table, Typography, message } from "antd";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, apiMessageKey, streamAnalytics } from "../api";
+import { DataPanel } from "../components/DataPanel";
+import { EmptyState } from "../components/EmptyState";
+import { ErrorState } from "../components/ErrorState";
+import { LoadingState } from "../components/LoadingState";
+import { PageHeader } from "../components/PageHeader";
 
 type LowQuestion = { fe_id: string; title: string; avg_score: number | null; n: number | null; masked: boolean };
 type Quote = { text: string; fe_id: string };
@@ -28,12 +33,14 @@ function Quotes({ quotes }: { quotes: Quote[] }) {
   const { t } = useTranslation();
   if (quotes.length === 0) return null;
   return (
-    <>
-      <Typography.Title level={5}>{t("analyze.quotes")}</Typography.Title>
+    <div className="analyze-quotes">
+      <div className="analyze-section-title">{t("analyze.quotes")}</div>
       {quotes.map((q) => (
-        <Typography.Paragraph key={`${q.fe_id}-${q.text}`}>{q.text}</Typography.Paragraph>
+        <blockquote key={`${q.fe_id}-${q.text}`} className="analyze-quote">
+          {q.text}
+        </blockquote>
       ))}
-    </>
+    </div>
   );
 }
 
@@ -46,15 +53,22 @@ function MarkdownBody({ text, streaming }: { text: string; streaming: boolean })
   );
 }
 
+function formatScore(value: number) {
+  return value.toFixed(1);
+}
+
 export function AnalyzePage() {
   const { t } = useTranslation();
+  const screens = Grid.useBreakpoint();
   const [form] = Form.useForm();
   const [surveys, setSurveys] = useState<Array<{ id: string; title: string }>>([]);
   const [depts, setDepts] = useState<Array<{ id: string; name: string }>>([]);
-  const [tab, setTab] = useState<PaneKind>("intent");
+  const [mode, setMode] = useState<PaneKind>("intent");
   const [intentCache, setIntentCache] = useState<Record<string, IntentResult>>({});
   const [summaryCache, setSummaryCache] = useState<Record<string, SummaryResult>>({});
   const [busyKind, setBusyKind] = useState<PaneKind | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const genRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -63,14 +77,26 @@ export function AnalyzePage() {
   const key = surveyId && departmentId ? cacheKey(surveyId, departmentId) : "";
   const intentOut = key ? intentCache[key] : undefined;
   const summaryOut = key ? summaryCache[key] : undefined;
+  const stacked = screens.xl === false;
+  const compact = screens.md === false;
+
+  const loadOptions = async () => {
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const [s, d] = await Promise.all([api.get("/surveys"), api.get("/departments")]);
+      setSurveys(s.data.items.filter((i: { status: string }) => i.status !== "draft"));
+      setDepts(d.data.items);
+      setLoadError(null);
+    } catch (e) {
+      setLoadError(apiMessageKey(e));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    void Promise.all([api.get("/surveys"), api.get("/departments")])
-      .then(([s, d]) => {
-        setSurveys(s.data.items.filter((i: { status: string }) => i.status !== "draft"));
-        setDepts(d.data.items);
-      })
-      .catch((e) => message.error(t(apiMessageKey(e))));
+    void loadOptions();
   }, [t]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -181,109 +207,179 @@ export function AnalyzePage() {
   const summaryQuotes = summaryOut?.quotes ?? [];
   const intentBusy = busyKind === "intent";
   const summaryBusy = busyKind === "summary";
+  const modeBusy = busyKind === mode;
+  const otherBusy = busyKind !== null && busyKind !== mode;
+  const surveyTitle = surveys.find((s) => s.id === surveyId)?.title;
+  const deptName = depts.find((d) => d.id === departmentId)?.name;
+  const intentHasResult = Boolean(intentOut?.ai_run_id || intentOut?.message_key);
+  const summaryHasResult = Boolean(summaryOut?.ai_run_id);
+  const runLabel =
+    mode === "intent"
+      ? intentHasResult
+        ? t("analyze.runAgain")
+        : t("analyze.runExecute")
+      : summaryHasResult
+        ? t("analyze.summaryAgain")
+        : t("analyze.summaryGenerate");
 
-  const intentPane = (
-    <>
-      <Button
-        type="primary"
-        loading={intentBusy}
-        disabled={summaryBusy}
-        title={t("analyze.runHint")}
-        onClick={() => void runPane("intent")}
-      >
-        {intentOut?.ai_run_id || intentOut?.message_key ? t("analyze.rerun") : t("analyze.run")}
-      </Button>
-      {intentBusy ? (
-        <div style={{ marginTop: 12 }}>
-          <Progress percent={100} status="active" showInfo={false} />
-          <Typography.Text type="secondary">{t("analyze.running")}</Typography.Text>
+  const conditions = (
+    <DataPanel title={t("analyze.conditions")}>
+      <dl className="analyze-meta">
+        <div>
+          <dt>{t("analyze.survey")}</dt>
+          <dd>{surveyTitle ?? t("common.noData")}</dd>
         </div>
-      ) : null}
-      {!intentOut && !intentBusy ? (
-        <Typography.Paragraph type="secondary" style={{ marginTop: 16 }}>
-          {t("analyze.emptyIntent")}
-        </Typography.Paragraph>
-      ) : null}
-      {intentOut ? (
-        <Card style={{ marginTop: 16 }}>
-          {intentOut.message_key ? <Typography.Paragraph>{t(intentOut.message_key)}</Typography.Paragraph> : null}
-          <MarkdownBody text={intentOut.markdown} streaming={intentBusy} />
-          {lows.length > 0 ? (
-            <>
-              <Typography.Title level={5}>{t("analyze.lowQuestions")}</Typography.Title>
-              <Table
-                size="small"
-                rowKey="fe_id"
-                pagination={false}
-                dataSource={lows}
-                columns={[
-                  { title: t("survey.title"), dataIndex: "title" },
-                  {
-                    title: t("analyze.avgScore"),
-                    render: (_: unknown, row: LowQuestion) => (row.masked ? t("dash.masked") : row.avg_score),
-                  },
-                ]}
-              />
-            </>
-          ) : null}
-          <Quotes quotes={intentQuotes} />
-        </Card>
-      ) : null}
-    </>
+        <div>
+          <dt>{t("analyze.department")}</dt>
+          <dd>{deptName ?? t("common.noData")}</dd>
+        </div>
+        <div>
+          <dt>{t("analyze.intent")}</dt>
+          <dd>{mode === "intent" ? t("analyze.dept_low_score_and_causes") : t("analyze.tabSummary")}</dd>
+        </div>
+        <div>
+          <dt>{t("analyze.status")}</dt>
+          <dd>
+            {busyKind === mode
+              ? t("analyze.statusRunning")
+              : mode === "intent"
+                ? intentHasResult
+                  ? t("analyze.statusDone")
+                  : t("analyze.statusIdle")
+                : summaryHasResult
+                  ? t("analyze.statusDone")
+                  : t("analyze.statusIdle")}
+          </dd>
+        </div>
+      </dl>
+    </DataPanel>
   );
 
-  const summaryPane = (
-    <>
-      <Button
-        loading={summaryBusy}
-        disabled={intentBusy}
-        title={t("analyze.summaryHint")}
-        onClick={() => void runPane("summary")}
-      >
-        {summaryOut?.ai_run_id ? t("analyze.rerun") : t("analyze.summary")}
-      </Button>
-      {summaryBusy ? (
-        <div style={{ marginTop: 12 }}>
-          <Progress percent={100} status="active" showInfo={false} />
-          <Typography.Text type="secondary">{t("analyze.running")}</Typography.Text>
+  const intentResult = intentOut ? (
+    <DataPanel title={t("analyze.result")}>
+      {intentOut.message_key ? <Typography.Paragraph>{t(intentOut.message_key)}</Typography.Paragraph> : null}
+      <MarkdownBody text={intentOut.markdown} streaming={intentBusy} />
+      {lows.length > 0 ? (
+        <div className="analyze-evidence">
+          <div className="analyze-section-title">{t("analyze.lowQuestions")}</div>
+          <Table
+            size="small"
+            rowKey="fe_id"
+            pagination={false}
+            scroll={{ x: 360 }}
+            dataSource={lows}
+            columns={[
+              { title: t("survey.title"), dataIndex: "title", ellipsis: true },
+              {
+                title: t("analyze.avgScore"),
+                width: 120,
+                render: (_: unknown, row: LowQuestion) =>
+                  row.masked ? t("dash.masked") : row.avg_score == null ? t("common.noData") : formatScore(row.avg_score),
+              },
+            ]}
+          />
         </div>
       ) : null}
-      {!summaryOut && !summaryBusy ? (
-        <Typography.Paragraph type="secondary" style={{ marginTop: 16 }}>
-          {t("analyze.emptySummary")}
-        </Typography.Paragraph>
-      ) : null}
-      {summaryOut ? (
-        <Card style={{ marginTop: 16 }}>
-          <MarkdownBody text={summaryOut.markdown} streaming={summaryBusy} />
-          <Quotes quotes={summaryQuotes} />
-        </Card>
-      ) : null}
-    </>
+      <Quotes quotes={intentQuotes} />
+    </DataPanel>
+  ) : null;
+
+  const summaryResult = summaryOut ? (
+    <DataPanel title={t("analyze.result")}>
+      <MarkdownBody text={summaryOut.markdown} streaming={summaryBusy} />
+      <Quotes quotes={summaryQuotes} />
+    </DataPanel>
+  ) : null;
+
+  const emptyIntent = (
+    <EmptyState
+      description={
+        <>
+          <span>{t("analyze.emptyIntent")}</span>
+          <span className="analyze-empty-hint">{t("analyze.emptyIntentHint")}</span>
+        </>
+      }
+    />
+  );
+
+  const emptySummary = (
+    <EmptyState
+      description={
+        <>
+          <span>{t("analyze.emptySummary")}</span>
+          <span className="analyze-empty-hint">{t("analyze.emptySummaryHint")}</span>
+        </>
+      }
+    />
   );
 
   return (
     <>
-      <Form form={form} layout="vertical" style={{ maxWidth: 480 }}>
-        <Form.Item name="survey_id" label={t("analyze.survey")} rules={[{ required: true }]}>
-          <Select
-            showSearch
-            optionFilterProp="label"
-            options={surveys.map((s) => ({ value: s.id, label: s.title }))}
-          />
-        </Form.Item>
-        <Form.Item name="department_id" label={t("analyze.department")} rules={[{ required: true }]}>
-          <Select options={depts.map((d) => ({ value: d.id, label: d.name }))} />
-        </Form.Item>
-      </Form>
-      <Tabs
-        activeKey={tab}
-        onChange={(next) => setTab(next as PaneKind)}
-        items={[
-          { key: "intent", label: t("analyze.tabAnalyze"), children: intentPane },
-          { key: "summary", label: t("analyze.tabSummary"), children: summaryPane },
-        ]}
-      />
+      <PageHeader title={t("analyze.title")} description={t("analyze.pageDescription")} />
+      {loadError ? (
+        <ErrorState message={t(loadError)} onRetry={() => void loadOptions()} retryLabel={t("common.retry")} />
+      ) : null}
+      {loading && !loadError ? <LoadingState /> : null}
+      {!loading && !loadError ? (
+        <>
+          <Form form={form} layout="vertical" className="analyze-filters">
+            <Form.Item name="survey_id" label={t("analyze.survey")} rules={[{ required: true }]} className="analyze-filter-survey">
+              <Select
+                showSearch
+                optionFilterProp="label"
+                options={surveys.map((s) => ({ value: s.id, label: s.title }))}
+              />
+            </Form.Item>
+            <Form.Item name="department_id" label={t("analyze.department")} rules={[{ required: true }]} className="analyze-filter-dept">
+              <Select options={depts.map((d) => ({ value: d.id, label: d.name }))} />
+            </Form.Item>
+            <Form.Item label={t("analyze.mode")} className="analyze-filter-mode">
+              <Segmented
+                block={compact}
+                value={mode}
+                onChange={(next) => setMode(next as PaneKind)}
+                options={[
+                  { value: "intent", label: t("analyze.modeIntent") },
+                  { value: "summary", label: t("analyze.tabSummary") },
+                ]}
+              />
+            </Form.Item>
+            <Form.Item label={<span className="analyze-run-label-spacer" />} colon={false} className="analyze-filter-run">
+              <Button
+                type="primary"
+                loading={modeBusy}
+                disabled={otherBusy}
+                title={mode === "intent" ? t("analyze.runHint") : t("analyze.summaryHint")}
+                onClick={() => void runPane(mode)}
+              >
+                {runLabel}
+              </Button>
+            </Form.Item>
+          </Form>
+          <div className={stacked ? "analyze-layout is-stacked" : "analyze-layout"}>
+            <div className="analyze-main">
+              {modeBusy ? (
+                <div className="analyze-progress">
+                  <Progress percent={100} status="active" showInfo={false} />
+                  <Typography.Text type="secondary">{t("analyze.running")}</Typography.Text>
+                </div>
+              ) : null}
+              {mode === "intent"
+                ? intentOut
+                  ? intentResult
+                  : intentBusy
+                    ? null
+                    : emptyIntent
+                : summaryOut
+                  ? summaryResult
+                  : summaryBusy
+                    ? null
+                    : emptySummary}
+            </div>
+            <aside className="analyze-side">{conditions}</aside>
+          </div>
+        </>
+      ) : null}
     </>
   );
 }
