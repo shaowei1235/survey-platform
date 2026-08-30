@@ -1,5 +1,6 @@
 "use client";
 
+import "@ant-design/v5-patch-for-react-19";
 import { App, ConfigProvider } from "antd";
 import jaJP from "antd/locale/ja_JP";
 import { appTheme } from "../theme";

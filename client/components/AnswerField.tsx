@@ -7,9 +7,10 @@ type Props = {
   item: ComponentItem;
   value: unknown;
   onChange: (value: unknown) => void;
+  error?: string;
 };
 
-export function AnswerField({ item, value, onChange }: Props) {
+export function AnswerField({ item, value, onChange, error }: Props) {
   const title = String(item.props.title ?? "");
   const required = Boolean(item.props.required);
   const heading = (
@@ -18,6 +19,11 @@ export function AnswerField({ item, value, onChange }: Props) {
       {required ? " *" : ""}
     </Typography.Paragraph>
   );
+  const errorText = error ? (
+    <Typography.Text type="danger" className="answer-field-error">
+      {error}
+    </Typography.Text>
+  ) : null;
 
   if (item.type === "title") {
     return <Typography.Title level={4}>{title}</Typography.Title>;
@@ -28,7 +34,7 @@ export function AnswerField({ item, value, onChange }: Props) {
   if (item.type === "radio") {
     const options = (item.props.options as { value: string; label: string }[]) ?? [];
     return (
-      <div style={{ marginBottom: 24 }}>
+      <div className="answer-field client-choice">
         {heading}
         <Radio.Group value={value} onChange={(e) => onChange(e.target.value)}>
           <Space direction="vertical">
@@ -39,44 +45,50 @@ export function AnswerField({ item, value, onChange }: Props) {
             ))}
           </Space>
         </Radio.Group>
+        {errorText}
       </div>
     );
   }
   if (item.type === "checkbox") {
     const options = (item.props.options as { value: string; label: string }[]) ?? [];
     return (
-      <div style={{ marginBottom: 24 }}>
+      <div className="answer-field client-choice">
         {heading}
         <Checkbox.Group
           value={(value as string[]) ?? []}
           options={options.map((o) => ({ value: o.value, label: o.label }))}
           onChange={(v) => onChange(v)}
         />
+        {errorText}
       </div>
     );
   }
   if (item.type === "input") {
     return (
-      <div style={{ marginBottom: 24 }}>
+      <div className="answer-field">
         {heading}
         <Input
+          status={error ? "error" : undefined}
           maxLength={Number(item.props.maxLength) || 200}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value)}
         />
+        {errorText}
       </div>
     );
   }
   if (item.type === "textarea") {
     return (
-      <div style={{ marginBottom: 24 }}>
+      <div className="answer-field">
         {heading}
         <Input.TextArea
+          status={error ? "error" : undefined}
           maxLength={Number(item.props.maxLength) || 2000}
           rows={4}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value)}
         />
+        {errorText}
       </div>
     );
   }

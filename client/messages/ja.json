@@ -4,7 +4,10 @@
     "employeeNo": "社員番号",
     "password": "パスワード",
     "submit": "ログイン",
-    "noAnswerRole": "回答権限がありません。"
+    "noAnswerRole": "回答権限がありません。",
+    "title": "ログイン",
+    "description": "社員番号とパスワードで回答を開始します。",
+    "hint": "この画面は社内の回答者向けです。"
   },
   "answer": {
     "list": "回答できるアンケート",
@@ -16,7 +19,18 @@
     "thanks": "ご回答ありがとうございました。",
     "back": "一覧へ戻る",
     "logout": "ログアウト",
-    "required": "必須項目です。"
+    "required": "必須項目です。",
+    "listDescription": "公開中で、まだ回答していないアンケートが表示されます。",
+    "retry": "再試行",
+    "progress": "回答進捗",
+    "answered": "回答済み",
+    "noQuestions": "回答できる設問がありません。",
+    "submitConfirmTitle": "回答を送信しますか？",
+    "submitConfirm": "送信後は内容を変更できません。",
+    "cancel": "キャンセル",
+    "leaveConfirmTitle": "入力中の内容があります",
+    "leaveConfirm": "入力中の回答は保存されません。一覧へ戻りますか？",
+    "thanksHint": "一覧から他のアンケートを確認できます。"
   },
   "error": {
     "generic": "処理に失敗しました。",

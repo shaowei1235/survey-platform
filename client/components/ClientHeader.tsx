@@ -1,15 +1,25 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { logout } from "../lib/api";
 import { t } from "../lib/i18n";
 
-type ClientHeaderProps = {
-  extra?: ReactNode;
-};
+export function ClientHeader() {
+  const router = useRouter();
 
-export function ClientHeader({ extra }: ClientHeaderProps) {
   return (
     <header className="client-header">
       <span className="client-header-brand">{t("appName")}</span>
-      {extra ? <div className="client-header-extra">{extra}</div> : null}
+      <button
+        type="button"
+        className="client-header-logout"
+        onClick={() => {
+          logout();
+          router.replace("/login");
+        }}
+      >
+        {t("answer.logout")}
+      </button>
     </header>
   );
 }

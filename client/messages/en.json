@@ -4,7 +4,10 @@
     "employeeNo": "Employee number",
     "password": "Password",
     "submit": "Log in",
-    "noAnswerRole": "You do not have permission to answer surveys."
+    "noAnswerRole": "You do not have permission to answer surveys.",
+    "title": "Log in",
+    "description": "Enter your employee number and password to start answering.",
+    "hint": "This screen is for internal respondents."
   },
   "answer": {
     "list": "Surveys you can answer",
@@ -16,7 +19,18 @@
     "thanks": "Thank you for your response.",
     "back": "Back to list",
     "logout": "Log out",
-    "required": "This field is required."
+    "required": "This field is required.",
+    "listDescription": "Published surveys you have not yet answered are shown here.",
+    "retry": "Retry",
+    "progress": "Progress",
+    "answered": "Answered",
+    "noQuestions": "There are no questions to answer.",
+    "submitConfirmTitle": "Submit your answers?",
+    "submitConfirm": "You cannot change your answers after submitting.",
+    "cancel": "Cancel",
+    "leaveConfirmTitle": "You have unsaved answers",
+    "leaveConfirm": "Your answers will not be saved. Return to the list?",
+    "thanksHint": "You can check other surveys from the list."
   },
   "error": {
     "generic": "The request failed.",
