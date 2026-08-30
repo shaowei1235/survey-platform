@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP
+from io import BytesIO
 from statistics import mean
+from urllib.parse import quote
 from uuid import UUID
 
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -13,6 +18,10 @@ from app.models import AnswerItem, Department, Response, Survey, SurveyStatus, U
 from app.services.authz import ANALYST_ROLES, assert_department_in_scope, descendant_ids, is_dept_manager_only, require_any_role, scope_department_ids
 from app.services.components import likert_questions, option_score
 from app.services.deidentify import sanitize_quote
+
+MASKED_CELL_LABEL = "非開示（n<5）"
+_GEN_LABELS = {"20s": "20代", "30s": "30代", "40s": "40代", "50s": "50代", "60s_plus": "60代以上"}
+_ALL_LABEL = "すべて"
 
 
 def subtree_department_ids(db: Session, user: User, department_id: UUID) -> list[UUID]:
@@ -222,3 +231,71 @@ def collect_quotes(db: Session, survey: Survey, dept_ids: list[UUID], employee_n
         if len(quotes) >= 30:
             break
     return quotes
+
+
+def format_score(value: float) -> Decimal:
+    return Decimal(str(value)).quantize(Decimal("0.1"), rounding=ROUND_HALF_UP)
+
+
+def _safe_filename(title: str) -> str:
+    cleaned = "".join("_" if ch in '\\/:*?"<>|' else ch for ch in title).strip()
+    cleaned = " ".join(cleaned.split())[:40].rstrip(" .")
+    return cleaned or "集計"
+
+
+def cross_tab_xlsx_filename(survey_title: str) -> str:
+    return f"集計_{_safe_filename(survey_title)}.xlsx"
+
+
+def content_disposition(filename: str) -> str:
+    ascii_name = "crosstab.xlsx"
+    return f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename)}"
+
+
+def build_cross_tab_xlsx(
+    tab: dict,
+    *,
+    survey_title: str,
+    department_name: str | None,
+    generation: str | None,
+    job_grade_name: str | None,
+) -> bytes:
+    book = Workbook()
+    sheet = book.active
+    sheet.title = "集計"
+    meta = [
+        ("アンケート", survey_title),
+        ("対象部門", department_name or _ALL_LABEL),
+        ("年代", _GEN_LABELS.get(generation or "", _ALL_LABEL) if generation else _ALL_LABEL),
+        ("職級", job_grade_name or _ALL_LABEL),
+        ("注記", "回答数が5未満のセルは非開示です。画面と同じ集計です。"),
+    ]
+    label_font = Font(bold=True)
+    for index, (label, value) in enumerate(meta, start=1):
+        sheet.cell(index, 1, label).font = label_font
+        sheet.cell(index, 2, value)
+    header_row = 7
+    sheet.cell(header_row, 1, "部門").font = label_font
+    questions = tab.get("questions") or []
+    for col, question in enumerate(questions, start=2):
+        cell = sheet.cell(header_row, col, question.get("title") or question.get("fe_id") or "")
+        cell.font = label_font
+        cell.alignment = Alignment(wrap_text=True)
+    for row_index, row in enumerate(tab.get("rows") or [], start=header_row + 1):
+        sheet.cell(row_index, 1, row.get("department_name") or "")
+        by_fe = {cell["fe_id"]: cell for cell in row.get("cells") or []}
+        for col, question in enumerate(questions, start=2):
+            item = by_fe.get(question["fe_id"])
+            dest = sheet.cell(row_index, col)
+            if item is None or item.get("masked") or item.get("avg_score") is None:
+                dest.value = MASKED_CELL_LABEL
+            else:
+                dest.value = float(format_score(item["avg_score"]))
+                dest.number_format = "0.0"
+    sheet.column_dimensions["A"].width = 18
+    for col in range(2, 2 + max(len(questions), 1)):
+        sheet.column_dimensions[sheet.cell(header_row, col).column_letter].width = 18
+    sheet.freeze_panes = "B8"
+    buf = BytesIO()
+    book.save(buf)
+    return buf.getvalue()

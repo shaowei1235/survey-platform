@@ -4,7 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -12,14 +12,17 @@ from app.config import settings
 from app.db import get_db
 from app.deps import current_user
 from app.errors import ApiError
-from app.models import AiRun, AiRunKind, AiRunStatus, User
+from app.models import AiRun, AiRunKind, AiRunStatus, Department, JobGrade, User
 from app.rate_limit import check_ai_rate
 from app.schemas import IntentIn, SummaryIn
 from app.services.analytics import (
     _survey_for_company,
+    build_cross_tab_xlsx,
     build_intent_evidence,
     collect_quotes,
+    content_disposition,
     cross_tab,
+    cross_tab_xlsx_filename,
     subtree_department_ids,
 )
 from app.services.authz import ANALYST_ROLES, assert_department_in_scope, require_any_role
@@ -63,6 +66,40 @@ def get_cross_tab(
     job_grade_id: UUID | None = None,
 ) -> dict:
     return cross_tab(db, user, survey_id, department_id, generation, job_grade_id)
+
+
+@router.get("/cross-tab.xlsx")
+def export_cross_tab(
+    user: Annotated[User, Depends(current_user)],
+    db: Annotated[Session, Depends(get_db)],
+    survey_id: UUID,
+    department_id: UUID | None = None,
+    generation: str | None = Query(default=None),
+    job_grade_id: UUID | None = None,
+) -> Response:
+    tab = cross_tab(db, user, survey_id, department_id, generation, job_grade_id)
+    survey = _survey_for_company(db, user, survey_id)
+    dept_name = None
+    if department_id:
+        dept = db.scalar(select(Department).where(Department.id == department_id, Department.company_id == user.company_id))
+        dept_name = dept.name if dept else None
+    grade_name = None
+    if job_grade_id:
+        grade = db.scalar(select(JobGrade).where(JobGrade.id == job_grade_id, JobGrade.company_id == user.company_id))
+        grade_name = grade.name if grade else None
+    payload = build_cross_tab_xlsx(
+        tab,
+        survey_title=survey.title,
+        department_name=dept_name,
+        generation=generation,
+        job_grade_name=grade_name,
+    )
+    filename = cross_tab_xlsx_filename(survey.title)
+    return Response(
+        content=payload,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": content_disposition(filename)},
+    )
 
 
 @router.post("/free-text-summary")

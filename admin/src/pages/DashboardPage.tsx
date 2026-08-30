@@ -1,4 +1,5 @@
-import { Button, Form, Select, Table, Tooltip as AntTooltip } from "antd";
+import { Button, Form, Select, Table, Tooltip as AntTooltip, message } from "antd";
+import { DownloadOutlined } from "@ant-design/icons";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -24,6 +25,33 @@ type DashFilters = {
   job_grade_id?: string;
 };
 type TipItem = { name?: string; value?: number | string | null; color?: string };
+
+function filenameFromDisposition(header: string | undefined, fallback: string) {
+  if (!header) return fallback;
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (star) {
+    try {
+      return decodeURIComponent(star[1]);
+    } catch {
+      return fallback;
+    }
+  }
+  const plain = /filename="?([^";]+)"?/i.exec(header);
+  return plain ? plain[1] : fallback;
+}
+
+async function blobMessageKey(error: unknown): Promise<string> {
+  const data = (error as { response?: { data?: unknown } }).response?.data;
+  if (data instanceof Blob) {
+    try {
+      const parsed = JSON.parse(await data.text()) as { message_key?: string };
+      if (parsed.message_key) return parsed.message_key;
+    } catch {
+      /* use generic */
+    }
+  }
+  return apiMessageKey(error);
+}
 
 function compactParams(values: Record<string, unknown>) {
   return Object.fromEntries(Object.entries(values).filter(([, v]) => v != null && v !== ""));
@@ -75,9 +103,11 @@ export function DashboardPage() {
   const [depts, setDepts] = useState<Array<{ id: string; name: string; parent_id: string | null; sort_order: number }>>([]);
   const [grades, setGrades] = useState<Array<{ id: string; name: string }>>([]);
   const [result, setResult] = useState<DashResult | null>(null);
+  const [lastQuery, setLastQuery] = useState<DashFilters | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [querying, setQuerying] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
   const queryingRef = useRef(false);
   const autoQueryOnceRef = useRef(false);
@@ -91,9 +121,11 @@ export function DashboardPage() {
     try {
       const { data } = await api.get("/analytics/cross-tab", { params: compactParams(values) });
       setResult(data);
+      setLastQuery(compactParams(values) as DashFilters);
       setQueryError(null);
     } catch (e) {
       setResult(null);
+      setLastQuery(null);
       if (!isReauthRedirecting()) setQueryError(apiMessageKey(e));
     } finally {
       queryingRef.current = false;
@@ -137,6 +169,29 @@ export function DashboardPage() {
 
   const retryQuery = () => {
     void form.validateFields().then((values) => loadCrossTab(values));
+  };
+
+  const downloadExcel = async () => {
+    if (!lastQuery?.survey_id || exporting) return;
+    setExporting(true);
+    try {
+      const res = await api.get("/analytics/cross-tab.xlsx", {
+        params: compactParams(lastQuery),
+        responseType: "blob",
+      });
+      const blob = res.data as Blob;
+      const filename = filenameFromDisposition(res.headers["content-disposition"], "crosstab.xlsx");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      if (!isReauthRedirecting()) message.error(t(await blobMessageKey(e)));
+    } finally {
+      setExporting(false);
+    }
   };
 
   const tableScrollX = result ? Math.max(640, 160 + result.questions.length * 128) : 640;
@@ -238,7 +293,14 @@ export function DashboardPage() {
                 )}
               </DataPanel>
               <div className="dash-table-panel">
-                <DataPanel title={t("dash.tableTitle")}>
+                <DataPanel
+                  title={t("dash.tableTitle")}
+                  extra={
+                    <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => void downloadExcel()} title={t("dash.exportHint")}>
+                      {t("dash.export")}
+                    </Button>
+                  }
+                >
                   <div className="dash-table-wrap">
                     <Table
                       rowKey="department_id"

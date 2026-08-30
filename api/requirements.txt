@@ -10,3 +10,5 @@ PyJWT>=2.10
 httpx>=0.28
 python-dotenv>=1.0
 pytest>=8.3
+openpyxl>=3.1
+

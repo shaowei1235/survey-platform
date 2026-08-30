@@ -258,6 +258,10 @@ body {
   margin-top: 4px;
 }
 
+.data-panel-extra {
+  flex-shrink: 0;
+}
+
 .loading-state {
   display: flex;
   justify-content: center;

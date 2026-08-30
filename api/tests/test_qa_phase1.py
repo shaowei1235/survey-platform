@@ -370,3 +370,77 @@ def test_cross_tab_job_grade_filter(
     assert hidden.status_code == 200, hidden.text
     cells = hidden.json()["rows"][0]["cells"]
     assert all(c["masked"] is True and c["avg_score"] is None for c in cells)
+
+
+def _xlsx_data_rows(content: bytes) -> dict[str, list]:
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    sheet = load_workbook(BytesIO(content), data_only=True).active
+    header_row = next(row[0].row for row in sheet.iter_rows(min_row=1, max_col=1) if row[0].value == "部門")
+    question_count = sum(1 for cell in sheet[header_row][1:] if cell.value)
+    out: dict[str, list] = {}
+    for row in sheet.iter_rows(min_row=header_row + 1):
+        name = row[0].value
+        if not name:
+            continue
+        values = []
+        for cell in row[1 : 1 + question_count]:
+            value = cell.value
+            if isinstance(value, (int, float)):
+                values.append(round(float(value), 1))
+            else:
+                values.append(value)
+        out[str(name)] = values
+    return out
+
+
+def test_export_sales_matches_screen_and_masks_ka2(
+    api: TestClient, hr_auth: dict[str, str], demo_survey_id: str
+) -> None:
+    from app.services.analytics import MASKED_CELL_LABEL
+
+    res = api.get("/api/v1/analytics/cross-tab.xlsx", headers=hr_auth, params={"survey_id": demo_survey_id})
+    assert res.status_code == 200, res.text
+    assert "spreadsheetml" in res.headers.get("content-type", "")
+    assert "filename*=UTF-8''" in res.headers.get("content-disposition", "")
+    rows = _xlsx_data_rows(res.content)
+    assert rows["営業部"] == [4.3, 4.4, 3.0, 3.5, 4.4]
+    assert rows["第一営業課"] == [4.2, 4.4, 3.2, 3.6, 4.4]
+    assert rows["第二営業課"] == [MASKED_CELL_LABEL] * 5
+    assert b"4.3333" not in res.content
+    assert b"2.3333" not in res.content
+
+
+def test_export_hr_dept_has_no_scores(
+    api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]
+) -> None:
+    from app.services.analytics import MASKED_CELL_LABEL
+
+    res = api.get(
+        "/api/v1/analytics/cross-tab.xlsx",
+        headers=hr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["人事部"]},
+    )
+    assert res.status_code == 200, res.text
+    rows = _xlsx_data_rows(res.content)
+    assert list(rows) == ["人事部"]
+    assert rows["人事部"] == [MASKED_CELL_LABEL] * 5
+    assert b"2.3333" not in res.content
+
+
+def test_export_sales_manager_cannot_export_dev(
+    api: TestClient, sales_mgr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]
+) -> None:
+    res = api.get(
+        "/api/v1/analytics/cross-tab.xlsx",
+        headers=sales_mgr_auth,
+        params={"survey_id": demo_survey_id, "department_id": depts["開発部"]},
+    )
+    assert_error(res, 403, "FORBIDDEN_SCOPE")
+
+
+def test_employee_cannot_export(api: TestClient, sales_emp_auth: dict[str, str], demo_survey_id: str) -> None:
+    res = api.get("/api/v1/analytics/cross-tab.xlsx", headers=sales_emp_auth, params={"survey_id": demo_survey_id})
+    assert_error(res, 403, "FORBIDDEN_ROLE")
