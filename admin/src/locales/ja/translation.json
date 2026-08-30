@@ -92,7 +92,42 @@
     "generation": "年代",
     "jobGrade": "職級",
     "roles": "役割",
-    "create": "追加"
+    "create": "追加",
+    "deptTitle": "部署管理",
+    "deptDescription": "部署階層と利用状態を管理します。",
+    "userTitle": "従業員管理",
+    "userDescription": "従業員の所属情報と権限を管理します。",
+    "addDept": "部署を追加",
+    "addUser": "従業員を追加",
+    "editDept": "部署を編集",
+    "editUser": "従業員を編集",
+    "deptName": "部署名",
+    "status": "状態",
+    "active": "有効",
+    "inactive": "無効",
+    "managerDept": "部門長の管理対象部署",
+    "passwordEditHint": "空欄の場合は変更しません。",
+    "passwordMin": "パスワードは8文字以上で入力してください。",
+    "employeeNoRule": "半角英数字、ハイフン、アンダースコアで1〜32文字です。",
+    "nameLength": "1〜100文字で入力してください。",
+    "rolesHint": "少なくとも1つの権限を選択してください。",
+    "section": {
+      "basic": "基本情報",
+      "affiliation": "所属情報",
+      "roles": "権限"
+    },
+    "filter": {
+      "keyword": "社員番号・氏名で検索",
+      "dept": "部署",
+      "role": "権限",
+      "allDepts": "すべての部署",
+      "allRoles": "すべての権限"
+    },
+    "empty": {
+      "dept": "部署はまだありません。",
+      "user": "従業員はまだいません。",
+      "filtered": "条件に一致する従業員はいません。"
+    }
   },
   "dash": {
     "title": "分析ダッシュボード",
