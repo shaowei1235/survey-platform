@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
+from app.db import SessionLocal, engine
 from app.main import app
+from app.models import RefreshToken
 
 PASSWORD = "Init#pass1"
 
@@ -25,7 +28,34 @@ LIKERT_ONE = [
 
 
 @pytest.fixture(scope="session")
-def api():
+def _refresh_token_ids_before_suite():
+    """Session-scoped logins persist refresh tokens; remove only those created by this run."""
+    with SessionLocal() as db:
+        preexisting = set(db.scalars(select(RefreshToken.id)))
+    yield preexisting
+    with SessionLocal() as db:
+        for token in db.scalars(select(RefreshToken)):
+            if token.id not in preexisting:
+                db.delete(token)
+        db.commit()
+
+
+@pytest.fixture(autouse=True)
+def _rollback_test_writes():
+    """Keep committed seed rows; roll back anything this test commits via get_db / SessionLocal."""
+    connection = engine.connect()
+    transaction = connection.begin()
+    SessionLocal.configure(bind=connection, join_transaction_mode="create_savepoint")
+    try:
+        yield
+    finally:
+        SessionLocal.configure(bind=engine, join_transaction_mode="conditional_savepoint")
+        transaction.rollback()
+        connection.close()
+
+
+@pytest.fixture(scope="session")
+def api(_refresh_token_ids_before_suite):
     with TestClient(app) as client:
         yield client
 
