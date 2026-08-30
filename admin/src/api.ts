@@ -19,6 +19,94 @@ export function apiMessageKey(error: unknown): string {
   return "error.generic";
 }
 
+export type SseHandlers = {
+  onEvidence: (data: Record<string, unknown>) => void;
+  onDelta: (text: string) => void;
+  onDone: (data: Record<string, unknown>) => void;
+  onError: (data: ApiErrorBody) => void;
+};
+
+function dispatchSseBlock(block: string, handlers: SseHandlers) {
+  let event = "message";
+  let payload = "";
+  for (const line of block.split("\n")) {
+    if (line.startsWith("event:")) event = line.slice(6).trim();
+    else if (line.startsWith("data:")) payload += line.slice(5).trim();
+  }
+  if (!payload) return;
+  let data: Record<string, unknown> = {};
+  try {
+    data = JSON.parse(payload) as Record<string, unknown>;
+  } catch {
+    return;
+  }
+  if (event === "evidence") handlers.onEvidence(data);
+  else if (event === "delta") handlers.onDelta(typeof data.text === "string" ? data.text : "");
+  else if (event === "done") handlers.onDone(data);
+  else if (event === "error") {
+    handlers.onError({
+      error_code: typeof data.error_code === "string" ? data.error_code : "AI_UPSTREAM_FAILED",
+      message_key: typeof data.message_key === "string" ? data.message_key : "error.generic",
+    });
+  }
+}
+
+export async function streamAnalytics(path: string, body: object, handlers: SseHandlers, signal?: AbortSignal) {
+  const token = getAccess();
+  const res = await fetch(`/api/v1${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+    signal,
+  });
+  if (!res.ok) {
+    let data: ApiErrorBody | undefined;
+    try {
+      data = (await res.json()) as ApiErrorBody;
+    } catch {
+      data = undefined;
+    }
+    throw { response: { data } };
+  }
+  if (!res.body) {
+    throw { response: { data: { error_code: "AI_UPSTREAM_FAILED", message_key: "error.ai_upstream" } } };
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let sawTerminal = false;
+  const wrapped: SseHandlers = {
+    onEvidence: handlers.onEvidence,
+    onDelta: handlers.onDelta,
+    onDone: (data) => {
+      sawTerminal = true;
+      handlers.onDone(data);
+    },
+    onError: (data) => {
+      sawTerminal = true;
+      handlers.onError(data);
+    },
+  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    let sep = buffer.indexOf("\n\n");
+    while (sep >= 0) {
+      dispatchSseBlock(buffer.slice(0, sep), wrapped);
+      buffer = buffer.slice(sep + 2);
+      sep = buffer.indexOf("\n\n");
+    }
+  }
+  if (buffer.trim()) dispatchSseBlock(buffer, wrapped);
+  if (!sawTerminal) {
+    throw { response: { data: { error_code: "AI_UPSTREAM_FAILED", message_key: "error.ai_upstream" } } };
+  }
+}
+
 export async function login(employee_no: string, password: string) {
   const { data } = await api.post("/auth/login", { employee_no, password });
   setTokens(data.access_token, data.refresh_token);

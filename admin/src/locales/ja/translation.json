@@ -64,7 +64,17 @@
     "insufficient_n": "開示可能なサンプルが不足しています。",
     "lowQuestions": "集計上の低満足項目",
     "avgScore": "平均点",
-    "quotes": "去識別した引用"
+    "quotes": "去識別した引用",
+    "running": "分析中です。数秒から数十秒かかることがあります。",
+    "runHint": "集計の低得点項目と主な要因を示します。平均点はSQLの集計です。",
+    "summaryHint": "自由記述のコメントから課題と否定的傾向を要約します。平均点は出しません。",
+    "tabAnalyze": "分析",
+    "tabSummary": "自由記述の要約",
+    "rerun": "再生成",
+    "survey": "アンケート",
+    "department": "部門",
+    "emptyIntent": "アンケートと部門を選び、分析を生成してください。",
+    "emptySummary": "アンケートと部門を選び、自由記述の要約を生成してください。"
   },
   "editor": {
     "palette": "部品",

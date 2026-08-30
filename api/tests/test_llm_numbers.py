@@ -12,6 +12,15 @@ def test_qa20_unit_invented_score() -> None:
         assert exc.error_code == "AI_NUMBER_MISMATCH"
 
 
+def test_markdown_invented_score_mismatch() -> None:
+    evidence = {"department_avg_by_fe_id": {"c_q1": 3.2}, "low_questions": [{"avg_score": 3.2, "n": 5}]}
+    try:
+        assert_model_numbers({"conclusion": "**平均**は1.11です。"}, evidence)
+        raise AssertionError("expected mismatch")
+    except ApiError as exc:
+        assert exc.error_code == "AI_NUMBER_MISMATCH"
+
+
 def test_qa20_unit_avg_score_key() -> None:
     evidence = {"low_questions": [{"avg_score": 3.2}]}
     try:

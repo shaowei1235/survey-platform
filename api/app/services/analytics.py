@@ -98,6 +98,59 @@ def cross_tab(
     }
 
 
+def build_intent_evidence(db: Session, user: User, survey: Survey, department_id: UUID) -> dict:
+    tab = cross_tab(db, user, survey.id, department_id, None, None)
+    company_tab = cross_tab(db, user, survey.id, None, None, None)
+    row = next((r for r in tab["rows"] if r["department_id"] == department_id), None)
+    if row is None:
+        raise ApiError("NOT_FOUND")
+    low = []
+    for cell, q in zip(row["cells"], tab["questions"], strict=False):
+        if cell["masked"] or cell["avg_score"] is None:
+            continue
+        low.append(
+            {
+                "fe_id": cell["fe_id"],
+                "title": q["title"],
+                "avg_score": cell["avg_score"],
+                "n": cell["n"],
+                "masked": False,
+            }
+        )
+    low.sort(key=lambda x: x["avg_score"])
+    low = low[:5]
+    nos = list(db.scalars(select(User.employee_no).where(User.company_id == user.company_id)))
+    quotes = collect_quotes(db, survey, [department_id], nos)
+    dept = db.scalar(select(Department).where(Department.id == department_id))
+    dept_avgs = {c["fe_id"]: c["avg_score"] for c in row["cells"] if not c["masked"]}
+    bench: dict[str, float] = {}
+    for q in tab["questions"]:
+        vals = []
+        for r in company_tab["rows"]:
+            cell = next(
+                (c for c in r["cells"] if c["fe_id"] == q["fe_id"] and not c["masked"] and c["avg_score"] is not None),
+                None,
+            )
+            if cell:
+                vals.append(cell["avg_score"])
+        if vals:
+            bench[q["fe_id"]] = round(sum(vals) / len(vals), 4)
+    evidence = {
+        "department_id": str(department_id),
+        "department_name": dept.name if dept else "",
+        "department_avg_by_fe_id": dept_avgs,
+        "low_questions": low,
+        "quotes": quotes,
+        "charts": [{"id": "bar_dept_scores", "type": "bar", "title_key": "chart.dept_scores"}],
+    }
+    if is_dept_manager_only(user):
+        evidence["benchmark_avg_by_fe_id"] = bench
+    else:
+        evidence["company_avg_by_fe_id"] = bench
+        evidence["benchmark_avg_by_fe_id"] = bench
+    return evidence
+
+
 def collect_quotes(db: Session, survey: Survey, dept_ids: list[UUID], employee_nos: list[str], fe_ids: set[str] | None = None) -> list[dict]:
     responses = db.scalars(
         select(Response).where(Response.survey_id == survey.id, Response.department_id.in_(dept_ids))

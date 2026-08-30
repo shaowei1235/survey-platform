@@ -2,3 +2,32 @@ body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
+
+.analyze-md h1,
+.analyze-md h2,
+.analyze-md h3,
+.analyze-md h4 {
+  margin: 0.6em 0 0.4em;
+  font-weight: 600;
+}
+
+.analyze-md p {
+  margin: 0 0 0.75em;
+}
+
+.analyze-md ul,
+.analyze-md ol {
+  margin: 0 0 0.75em;
+  padding-left: 1.4em;
+}
+
+.analyze-md-streaming::after {
+  content: "▍";
+  animation: analyze-caret 1s step-end infinite;
+}
+
+@keyframes analyze-caret {
+  50% {
+    opacity: 0;
+  }
+}
