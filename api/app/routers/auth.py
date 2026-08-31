@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -26,7 +26,7 @@ def _issue_tokens(db: Session, user: User) -> TokenOut:
         RefreshToken(
             user_id=user.id,
             token_hash=hashed,
-            expires_at=datetime.now(UTC) + timedelta(days=settings.refresh_token_days),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=settings.refresh_token_days),
         )
     )
     db.commit()
@@ -49,7 +49,7 @@ def login(body: LoginIn, request: Request, db: Annotated[Session, Depends(get_db
 @router.post("/auth/refresh", response_model=TokenOut)
 def refresh(body: RefreshIn, db: Annotated[Session, Depends(get_db)]) -> TokenOut:
     token = valid_refresh_token(db, body.refresh_token)
-    token.revoked_at = datetime.now(UTC)
+    token.revoked_at = datetime.now(timezone.utc)
     user = db.scalar(select(User).options(selectinload(User.roles)).where(User.id == token.user_id, User.is_active.is_(True)))
     if user is None:
         raise ApiError("UNAUTHENTICATED")

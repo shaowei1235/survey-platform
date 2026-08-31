@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -155,10 +155,10 @@ def realistic_survey_catalog() -> list[dict]:
         {
             "title": TITLE_ES_2025,
             "status": SurveyStatus.closed,
-            "published_at": datetime(2025, 11, 4, 0, 0, tzinfo=UTC),
-            "closed_at": datetime(2025, 12, 12, 9, 0, tzinfo=UTC),
-            "created_at": datetime(2025, 10, 20, 1, 0, tzinfo=UTC),
-            "updated_at": datetime(2025, 12, 12, 9, 0, tzinfo=UTC),
+            "published_at": datetime(2025, 11, 4, 0, 0, tzinfo=timezone.utc),
+            "closed_at": datetime(2025, 12, 12, 9, 0, tzinfo=timezone.utc),
+            "created_at": datetime(2025, 10, 20, 1, 0, tzinfo=timezone.utc),
+            "updated_at": datetime(2025, 12, 12, 9, 0, tzinfo=timezone.utc),
             "component_list": [
                 paragraph("c_intro", "昨年度の職場改善に向けて実施した従業員満足度調査です。回答は統計的に集計します。"),
                 likert("c_q1", "上司は相談に乗ってくれる"),
@@ -171,10 +171,10 @@ def realistic_survey_catalog() -> list[dict]:
         {
             "title": TITLE_ONBOARDING,
             "status": SurveyStatus.published,
-            "published_at": datetime(2026, 4, 8, 0, 0, tzinfo=UTC),
+            "published_at": datetime(2026, 4, 8, 0, 0, tzinfo=timezone.utc),
             "closed_at": None,
-            "created_at": datetime(2026, 3, 23, 1, 0, tzinfo=UTC),
-            "updated_at": datetime(2026, 4, 8, 0, 0, tzinfo=UTC),
+            "created_at": datetime(2026, 3, 23, 1, 0, tzinfo=timezone.utc),
+            "updated_at": datetime(2026, 4, 8, 0, 0, tzinfo=timezone.utc),
             "component_list": [
                 paragraph("c_intro", "入社後の配属・育成の状況を把握し、フォローに活かすためのアンケートです。"),
                 likert("c_q1", "配属先の業務内容は入社前の説明とおおむね一致している"),
@@ -188,8 +188,8 @@ def realistic_survey_catalog() -> list[dict]:
             "status": SurveyStatus.draft,
             "published_at": None,
             "closed_at": None,
-            "created_at": datetime(2026, 8, 18, 1, 0, tzinfo=UTC),
-            "updated_at": datetime(2026, 8, 25, 2, 30, tzinfo=UTC),
+            "created_at": datetime(2026, 8, 18, 1, 0, tzinfo=timezone.utc),
+            "updated_at": datetime(2026, 8, 25, 2, 30, tzinfo=timezone.utc),
             "component_list": [
                 paragraph("c_intro", "来期の配置・育成計画の参考とするための意向調査です。現在は設問を調整中です。"),
                 likert("c_q1", "現在の職務で専門性をさらに高めたい"),
@@ -201,10 +201,10 @@ def realistic_survey_catalog() -> list[dict]:
         {
             "title": TITLE_TRAINING,
             "status": SurveyStatus.closed,
-            "published_at": datetime(2025, 10, 6, 0, 0, tzinfo=UTC),
-            "closed_at": datetime(2025, 10, 20, 9, 0, tzinfo=UTC),
-            "created_at": datetime(2025, 9, 22, 1, 0, tzinfo=UTC),
-            "updated_at": datetime(2025, 10, 20, 9, 0, tzinfo=UTC),
+            "published_at": datetime(2025, 10, 6, 0, 0, tzinfo=timezone.utc),
+            "closed_at": datetime(2025, 10, 20, 9, 0, tzinfo=timezone.utc),
+            "created_at": datetime(2025, 9, 22, 1, 0, tzinfo=timezone.utc),
+            "updated_at": datetime(2025, 10, 20, 9, 0, tzinfo=timezone.utc),
             "component_list": [
                 paragraph("c_intro", "新任管理職研修の内容改善に使う受講後アンケートです。"),
                 likert("c_q1", "研修内容は今後のマネジメントに活かせる"),
@@ -216,10 +216,10 @@ def realistic_survey_catalog() -> list[dict]:
         {
             "title": TITLE_PULSE,
             "status": SurveyStatus.published,
-            "published_at": datetime(2026, 8, 3, 0, 0, tzinfo=UTC),
+            "published_at": datetime(2026, 8, 3, 0, 0, tzinfo=timezone.utc),
             "closed_at": None,
-            "created_at": datetime(2026, 7, 28, 1, 0, tzinfo=UTC),
-            "updated_at": datetime(2026, 8, 3, 0, 0, tzinfo=UTC),
+            "created_at": datetime(2026, 7, 28, 1, 0, tzinfo=timezone.utc),
+            "updated_at": datetime(2026, 8, 3, 0, 0, tzinfo=timezone.utc),
             "component_list": [
                 paragraph("c_intro", "直近の職場状況を短時間で把握するためのパルス調査です。"),
                 likert("c_q1", "最近2週間の業務量は適正である"),

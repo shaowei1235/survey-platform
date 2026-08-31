@@ -10,12 +10,14 @@ import { store } from "./store";
 import { appTheme } from "./theme";
 import "./index.css";
 
+const routerBasename = import.meta.env.BASE_URL.replace(/\/$/, "") || undefined;
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <Provider store={store}>
       <ConfigProvider locale={jaJP} theme={appTheme}>
         <AntdApp>
-          <BrowserRouter>
+          <BrowserRouter basename={routerBasename}>
             <App />
           </BrowserRouter>
         </AntdApp>

@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -40,6 +40,6 @@ def valid_refresh_token(db: Session, raw: str) -> RefreshToken:
             RefreshToken.revoked_at.is_(None),
         )
     )
-    if token is None or token.expires_at < datetime.now(UTC):
+    if token is None or token.expires_at < datetime.now(timezone.utc):
         raise ApiError("UNAUTHENTICATED")
     return token

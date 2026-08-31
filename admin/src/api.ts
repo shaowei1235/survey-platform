@@ -12,7 +12,7 @@ export function isReauthRedirecting(): boolean {
 
 export function notifyReauthRequired() {
   if (reauthInFlight) return;
-  if (window.location.pathname === "/login") return;
+  if (window.location.pathname.endsWith("/login")) return;
   reauthInFlight = true;
   reauthHandler?.();
 }
@@ -34,7 +34,9 @@ function isUnauthenticatedError(error: AxiosError<ApiErrorBody>) {
   return key === "error.unauthenticated" || (status === 401 && !key);
 }
 
-export const api = axios.create({ baseURL: "/api/v1" });
+const apiBase = `${import.meta.env.BASE_URL}api/v1`.replace(/\/{2,}/g, "/");
+
+export const api = axios.create({ baseURL: apiBase });
 
 api.interceptors.request.use((config) => {
   const token = getAccess();
@@ -95,7 +97,7 @@ function dispatchSseBlock(block: string, handlers: SseHandlers) {
 
 export async function streamAnalytics(path: string, body: object, handlers: SseHandlers, signal?: AbortSignal) {
   const token = getAccess();
-  const res = await fetch(`/api/v1${path}`, {
+  const res = await fetch(`${apiBase}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -94,7 +94,7 @@ def seed_demo() -> None:
                 title=DEMO_TITLE,
                 status=SurveyStatus.published,
                 component_list=demo_components(),
-                published_at=datetime.now(UTC),
+                published_at=datetime.now(timezone.utc),
                 created_by=source.created_by,
             )
             db.add(survey)
@@ -102,7 +102,7 @@ def seed_demo() -> None:
             print("created", DEMO_TITLE, survey.id)
         else:
             survey.status = SurveyStatus.published
-            survey.published_at = survey.published_at or datetime.now(UTC)
+            survey.published_at = survey.published_at or datetime.now(timezone.utc)
             survey.component_list = demo_components()
             db.execute(delete(AiRun).where(AiRun.survey_id == survey.id))
             db.execute(delete(Response).where(Response.survey_id == survey.id))

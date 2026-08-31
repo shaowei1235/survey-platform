@@ -1,6 +1,6 @@
 import hashlib
 import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import jwt
@@ -27,7 +27,7 @@ def create_access_token(user_id: UUID, company_id: UUID) -> str:
     payload = {
         "sub": str(user_id),
         "cid": str(company_id),
-        "exp": datetime.now(UTC) + timedelta(seconds=settings.access_token_seconds),
+        "exp": datetime.now(timezone.utc) + timedelta(seconds=settings.access_token_seconds),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 

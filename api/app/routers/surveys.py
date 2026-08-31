@@ -1,4 +1,4 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -118,7 +118,7 @@ def publish(
     if not has_answerable(survey.component_list or []):
         raise ApiError("VALIDATION_ERROR")
     survey.status = SurveyStatus.published
-    survey.published_at = datetime.now(UTC)
+    survey.published_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(survey)
     return _out(survey)
@@ -135,7 +135,7 @@ def close(
     if survey.status != SurveyStatus.published:
         raise ApiError("SURVEY_NOT_EDITABLE")
     survey.status = SurveyStatus.closed
-    survey.closed_at = datetime.now(UTC)
+    survey.closed_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(survey)
     return _out(survey)
