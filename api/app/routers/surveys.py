@@ -13,6 +13,7 @@ from app.models import Response, Survey, SurveyStatus, User
 from app.schemas import SurveyCreate, SurveyListItem, SurveyOut, SurveyPatch
 from app.services.authz import ADMIN_ROLES, SURVEY_WRITE_ROLES, require_any_role
 from app.services.components import has_answerable, validate_component_list
+from app.services.surveys import delete_survey_cascade
 
 router = APIRouter(prefix="/surveys", tags=["surveys"])
 
@@ -138,3 +139,17 @@ def close(
     db.commit()
     db.refresh(survey)
     return _out(survey)
+
+
+@router.delete("/{survey_id}", status_code=204)
+def delete_survey(
+    survey_id: UUID, user: Annotated[User, Depends(current_user)], db: Annotated[Session, Depends(get_db)]
+) -> None:
+    require_any_role(user, SURVEY_WRITE_ROLES)
+    survey = db.scalar(select(Survey).where(Survey.id == survey_id, Survey.company_id == user.company_id))
+    if survey is None:
+        raise ApiError("NOT_FOUND")
+    if survey.status != SurveyStatus.draft:
+        raise ApiError("SURVEY_NOT_DELETABLE")
+    delete_survey_cascade(db, survey)
+    db.commit()

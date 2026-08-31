@@ -8,6 +8,7 @@ ERROR_KEYS = {
     "FORBIDDEN_SCOPE": ("error.forbidden_scope", 403),
     "NOT_FOUND": ("error.not_found", 404),
     "SURVEY_NOT_EDITABLE": ("error.survey_not_editable", 409),
+    "SURVEY_NOT_DELETABLE": ("error.survey_not_deletable", 409),
     "ALREADY_SUBMITTED": ("error.already_submitted", 409),
     "NOT_PUBLISHED": ("error.not_published", 409),
     "AI_UPSTREAM_FAILED": ("error.ai_upstream", 502),

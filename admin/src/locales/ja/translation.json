@@ -55,16 +55,18 @@
   },
   "survey": {
     "list": "アンケート一覧",
-    "listDescription": "アンケートの作成、公開、終了を管理します。",
+    "listDescription": "アンケートの作成、公開、終了、削除を管理します。",
     "edit": "アンケート編集",
     "view": "表示",
     "create": "新規作成",
     "newTitle": "新規アンケート",
     "publish": "公開",
     "close": "終了",
+    "delete": "削除",
     "save": "保存",
     "title": "タイトル",
     "statusLabel": "状態",
+    "responseCount": "回答数",
     "updatedAt": "更新日時",
     "actions": "操作",
     "unsavedConfirm": "未保存の変更があります。閉じますか？",
@@ -84,6 +86,10 @@
     "closeConfirm": {
       "title": "このアンケートを終了しますか？",
       "description": "終了すると従業員は新たに回答を送信できなくなります。"
+    },
+    "deleteConfirm": {
+      "title": "この下書きを削除しますか？",
+      "description": "削除すると元に戻せません。"
     },
     "status": {
       "draft": "下書き",
@@ -147,6 +153,7 @@
     "selectSurvey": "アンケートを選んで表示してください。",
     "noSurveys": "分析できるアンケートがありません。",
     "allMasked": "開示できる集計がありません。",
+    "noResponses": "まだ回答がありません。",
     "tableTitle": "部署×設問の平均点",
     "chartUnit": "平均点（1〜5）。非開示の値はグラフに含まれません。",
     "export": "Excelをダウンロード",
@@ -172,6 +179,7 @@
     "intent": "意図",
     "dept_low_score_and_causes": "指定部門の低満足項目と主な原因",
     "insufficient_n": "開示可能なサンプルが不足しています。",
+    "no_responses": "まだ回答がありません。",
     "lowQuestions": "集計上の低満足項目",
     "avgScore": "平均点",
     "quotes": "去識別した引用",
@@ -273,6 +281,7 @@
     "forbidden_scope": "対象部門を参照する権限がありません。",
     "not_found": "対象が見つかりません。",
     "survey_not_editable": "このアンケートは編集できません。",
+    "survey_not_deletable": "公開済みまたは終了したアンケートは削除できません。",
     "already_submitted": "既に回答済みです。",
     "not_published": "公開されていないアンケートです。",
     "ai_upstream": "AIサービスを利用できません。",

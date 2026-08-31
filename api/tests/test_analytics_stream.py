@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import json
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
 from app.db import SessionLocal
 from app.models import AiRun
-from tests.conftest import assert_error
+from tests.conftest import LIKERT_ONE, assert_error
 
 
 def parse_sse(text: str) -> list[tuple[str, dict]]:
@@ -92,7 +93,7 @@ def test_intent_stream_insufficient_n_skips_llm(
     res = api.post(
         "/api/v1/analytics/intent/stream",
         headers=hr_auth,
-        json={"survey_id": demo_survey_id, "intent": "dept_low_score_and_causes", "department_id": depts["開発部"]},
+        json={"survey_id": demo_survey_id, "intent": "dept_low_score_and_causes", "department_id": depts["人事部"]},
     )
     assert res.status_code == 200, res.text
     assert called["n"] == 0
@@ -100,6 +101,35 @@ def test_intent_stream_insufficient_n_skips_llm(
     assert events[0][0] == "evidence"
     assert events[-1][0] == "done"
     assert events[-1][1]["message_key"] == "analyze.insufficient_n"
+    assert events[-1][1]["ai_run_id"] is None
+
+
+def test_intent_stream_zero_responses_skips_llm(
+    api: TestClient, hr_auth: dict[str, str], depts: dict[str, str], monkeypatch
+) -> None:
+    created = api.post("/api/v1/surveys", headers=hr_auth, json={"title": f"QA empty-intent {uuid4().hex[:8]}"})
+    survey_id = created.json()["id"]
+    assert api.patch(f"/api/v1/surveys/{survey_id}", headers=hr_auth, json={"component_list": LIKERT_ONE}).status_code == 200
+    assert api.post(f"/api/v1/surveys/{survey_id}/publish", headers=hr_auth).status_code == 200
+    called = {"n": 0}
+
+    def fake_stream(*_args, **_kwargs):
+        called["n"] += 1
+        yield "should not run"
+
+    monkeypatch.setattr("app.routers.analytics.stream_markdown", fake_stream)
+    res = api.post(
+        "/api/v1/analytics/intent/stream",
+        headers=hr_auth,
+        json={"survey_id": survey_id, "intent": "dept_low_score_and_causes", "department_id": depts["営業部"]},
+    )
+    assert res.status_code == 200, res.text
+    assert called["n"] == 0
+    events = parse_sse(res.text)
+    assert events[0][0] == "evidence"
+    assert events[0][1].get("empty") is True
+    assert events[-1][0] == "done"
+    assert events[-1][1]["message_key"] == "analyze.no_responses"
     assert events[-1][1]["ai_run_id"] is None
 
 

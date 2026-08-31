@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api, apiMessageKey, isReauthRedirecting } from "../api";
 import { deptSelectOptions } from "../deptOptions";
-import { pickDefaultAnalyzableSurvey, type AnalyzableSurvey } from "../surveyPick";
+import { pickDefaultAnalyzableSurvey, surveyHasNoResponses, surveyPickerLabel, type AnalyzableSurvey } from "../surveyPick";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -18,7 +18,7 @@ const BAR_COLORS = ["#3155A6", "#17745A", "#9A6811", "#5B7FCF", "#B13A44", "#667
 
 type DashCell = { fe_id: string; n: number | null; avg_score: number | null; masked: boolean };
 type DashRow = { department_id: string; department_name: string; cells: DashCell[] };
-type DashResult = { questions: Array<{ fe_id: string; title: string }>; rows: DashRow[] };
+type DashResult = { questions: Array<{ fe_id: string; title: string }>; rows: DashRow[]; empty?: boolean };
 type CompletionRow = {
   department_id: string;
   department_name: string;
@@ -91,6 +91,12 @@ function formatScore(value: number) {
 
 function formatRate(value: number) {
   return `${(value * 100).toFixed(1)}%`;
+}
+
+function isScoreEmpty(result: DashResult, survey?: AnalyzableSurvey) {
+  if (surveyHasNoResponses(survey) || result.empty) return true;
+  const cells = result.rows.flatMap((row) => row.cells);
+  return cells.length > 0 && cells.every((cell) => cell.n === 0);
 }
 
 function DashTooltip({ active, payload, label }: { active?: boolean; payload?: TipItem[]; label?: string }) {
@@ -190,6 +196,9 @@ export function DashboardPage() {
   }, []);
 
   const plotted = useMemo(() => (result ? chartRows(result) : []), [result]);
+  const selectedSurveyId = Form.useWatch("survey_id", form) as string | undefined;
+  const selectedSurvey = surveys.find((s) => s.id === selectedSurveyId);
+  const scoreEmpty = result ? isScoreEmpty(result, selectedSurvey) : false;
 
   const retryQuery = () => {
     void form.validateFields().then((values) => loadCrossTab(values));
@@ -245,7 +254,10 @@ export function DashboardPage() {
                   aria-label={t("analyze.survey")}
                   showSearch
                   optionFilterProp="label"
-                  options={surveys.map((s) => ({ value: s.id, label: s.title }))}
+                  options={surveys.map((s) => ({
+                    value: s.id,
+                    label: surveyPickerLabel(s, t(`survey.status.${s.status ?? "published"}`)),
+                  }))}
                 />
               </Form.Item>
               <Form.Item name="department_id" className="filter-control-status">
@@ -283,7 +295,9 @@ export function DashboardPage() {
           {!queryError && result && result.rows.length > 0 ? (
             <>
               <DataPanel title={t("chart.dept_scores")} description={t("dash.chartUnit")}>
-                {plotted.length === 0 ? (
+                {scoreEmpty ? (
+                  <EmptyState description={t("dash.noResponses")} />
+                ) : plotted.length === 0 ? (
                   <EmptyState description={t("dash.allMasked")} />
                 ) : (
                   <div className="dash-chart-wrap">
@@ -320,41 +334,48 @@ export function DashboardPage() {
                 <DataPanel
                   title={t("dash.tableTitle")}
                   extra={
-                    <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => void downloadExcel()} title={t("dash.exportHint")}>
-                      {t("dash.export")}
-                    </Button>
+                    scoreEmpty ? null : (
+                      <Button icon={<DownloadOutlined />} loading={exporting} onClick={() => void downloadExcel()} title={t("dash.exportHint")}>
+                        {t("dash.export")}
+                      </Button>
+                    )
                   }
                 >
-                  <div className="dash-table-wrap">
-                    <Table
-                      rowKey="department_id"
-                      dataSource={result.rows}
-                      pagination={false}
-                      scroll={{ x: tableScrollX }}
-                      columns={[
-                        {
-                          title: t("org.dept"),
-                          dataIndex: "department_name",
-                          fixed: "left",
-                          width: 160,
-                          ellipsis: true,
-                        },
-                        ...result.questions.map((q) => ({
-                          title: (
-                            <AntTooltip title={q.title}>
-                              <span className="dash-col-title">{q.title}</span>
-                            </AntTooltip>
-                          ),
-                          width: 128,
-                          render: (_: unknown, row: DashRow) => {
-                            const cell = row.cells.find((c) => c.fe_id === q.fe_id);
-                            if (!cell || cell.masked) return <span className="dash-masked">{t("dash.masked")}</span>;
-                            return cell.avg_score == null ? t("common.noData") : formatScore(cell.avg_score);
+                  {scoreEmpty ? (
+                    <EmptyState description={t("dash.noResponses")} />
+                  ) : (
+                    <div className="dash-table-wrap">
+                      <Table
+                        rowKey="department_id"
+                        dataSource={result.rows}
+                        pagination={false}
+                        scroll={{ x: tableScrollX }}
+                        columns={[
+                          {
+                            title: t("org.dept"),
+                            dataIndex: "department_name",
+                            fixed: "left",
+                            width: 160,
+                            ellipsis: true,
                           },
-                        })),
-                      ]}
-                    />
-                  </div>
+                          ...result.questions.map((q) => ({
+                            title: (
+                              <AntTooltip title={q.title}>
+                                <span className="dash-col-title">{q.title}</span>
+                              </AntTooltip>
+                            ),
+                            width: 128,
+                            render: (_: unknown, row: DashRow) => {
+                              const cell = row.cells.find((c) => c.fe_id === q.fe_id);
+                              if (cell?.n === 0) return t("common.noData");
+                              if (!cell || cell.masked) return <span className="dash-masked">{t("dash.masked")}</span>;
+                              return cell.avg_score == null ? t("common.noData") : formatScore(cell.avg_score);
+                            },
+                          })),
+                        ]}
+                      />
+                    </div>
+                  )}
                 </DataPanel>
               </div>
               {completion && completion.rows.length > 0 ? (

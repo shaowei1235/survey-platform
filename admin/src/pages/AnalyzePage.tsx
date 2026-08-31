@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, apiMessageKey, isReauthRedirecting, streamAnalytics } from "../api";
 import { deptSelectOptions } from "../deptOptions";
-import { pickDefaultAnalyzableSurvey, type AnalyzableSurvey } from "../surveyPick";
+import { pickDefaultAnalyzableSurvey, surveyHasNoResponses, surveyPickerLabel, type AnalyzableSurvey } from "../surveyPick";
 import { DataPanel } from "../components/DataPanel";
 import { EmptyState } from "../components/EmptyState";
 import { ErrorState } from "../components/ErrorState";
@@ -216,7 +216,9 @@ export function AnalyzePage() {
   const summaryBusy = busyKind === "summary";
   const modeBusy = busyKind === mode;
   const otherBusy = busyKind !== null && busyKind !== mode;
-  const surveyTitle = surveys.find((s) => s.id === surveyId)?.title;
+  const selectedSurvey = surveys.find((s) => s.id === surveyId);
+  const noResponses = surveyHasNoResponses(selectedSurvey);
+  const surveyTitle = selectedSurvey?.title;
   const deptName = depts.find((d) => d.id === departmentId)?.name;
   const intentHasResult = Boolean(intentOut?.ai_run_id || intentOut?.message_key);
   const summaryHasResult = Boolean(summaryOut?.ai_run_id);
@@ -334,7 +336,10 @@ export function AnalyzePage() {
               <Select
                 showSearch
                 optionFilterProp="label"
-                options={surveys.map((s) => ({ value: s.id, label: s.title }))}
+                options={surveys.map((s) => ({
+                  value: s.id,
+                  label: surveyPickerLabel(s, t(`survey.status.${s.status ?? "published"}`)),
+                }))}
               />
             </Form.Item>
             <Form.Item name="department_id" label={t("analyze.department")} rules={[{ required: true }]} className="analyze-filter-dept">
@@ -355,8 +360,8 @@ export function AnalyzePage() {
               <Button
                 type="primary"
                 loading={modeBusy}
-                disabled={otherBusy}
-                title={mode === "intent" ? t("analyze.runHint") : t("analyze.summaryHint")}
+                disabled={otherBusy || noResponses}
+                title={noResponses ? t("analyze.no_responses") : mode === "intent" ? t("analyze.runHint") : t("analyze.summaryHint")}
                 onClick={() => void runPane(mode)}
               >
                 {runLabel}
@@ -371,7 +376,9 @@ export function AnalyzePage() {
                   <Typography.Text type="secondary">{t("analyze.running")}</Typography.Text>
                 </div>
               ) : null}
-              {mode === "intent"
+              {noResponses ? (
+                <EmptyState description={t("analyze.no_responses")} />
+              ) : mode === "intent"
                 ? intentOut
                   ? intentResult
                   : intentBusy

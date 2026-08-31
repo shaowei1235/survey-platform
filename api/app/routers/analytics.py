@@ -57,6 +57,10 @@ def _sse_response(chunks: Iterator[str]) -> StreamingResponse:
     return StreamingResponse(chunks, media_type="text/event-stream", headers=SSE_HEADERS)
 
 
+def _no_sample_message_key(evidence: dict) -> str:
+    return "analyze.no_responses" if evidence.get("empty") else "analyze.insufficient_n"
+
+
 @router.get("/cross-tab")
 def get_cross_tab(
     user: Annotated[User, Depends(current_user)],
@@ -161,8 +165,8 @@ def run_intent(body: IntentIn, user: Annotated[User, Depends(current_user)], db:
             "ai_run_id": None,
             "intent": body.intent,
             "conclusion": "",
-            "message_key": "analyze.insufficient_n",
-            "evidence": {"questions": [], "quotes": [], "low_questions": []},
+            "message_key": _no_sample_message_key(evidence),
+            "evidence": {"questions": [], "quotes": [], "low_questions": [], "empty": bool(evidence.get("empty"))},
         }
     parsed = complete_json(INTENT_SYSTEM, {"evidence": evidence}, INTENT_SCHEMA, "intent_result")
     assert_model_numbers(parsed, evidence)
@@ -200,7 +204,7 @@ def run_intent_stream(
     def generate() -> Iterator[str]:
         yield _sse("evidence", evidence)
         if not evidence["low_questions"]:
-            yield _sse("done", {"ai_run_id": None, "message_key": "analyze.insufficient_n"})
+            yield _sse("done", {"ai_run_id": None, "message_key": _no_sample_message_key(evidence)})
             return
         try:
             chunks: list[str] = []

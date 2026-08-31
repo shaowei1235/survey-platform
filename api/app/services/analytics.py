@@ -151,6 +151,7 @@ def cross_tab(
         ],
         "rows": rows,
         "charts": [{"id": "bar_dept_scores", "type": "bar", "title_key": "chart.dept_scores"}],
+        "empty": not any(scores.values()),
     }
 
 
@@ -264,6 +265,7 @@ def build_intent_evidence(db: Session, user: User, survey: Survey, department_id
         "low_questions": low,
         "quotes": quotes,
         "charts": [{"id": "bar_dept_scores", "type": "bar", "title_key": "chart.dept_scores"}],
+        "empty": bool(tab.get("empty")),
     }
     if is_dept_manager_only(user):
         evidence["benchmark_avg_by_fe_id"] = bench

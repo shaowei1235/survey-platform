@@ -12,7 +12,13 @@ import { PageHeader } from "../components/PageHeader";
 import { StatusTag } from "../components/StatusTag";
 import { canWriteSurvey, type Me } from "../session";
 
-type Row = { id: string; title: string; status: string; updated_at: string | null };
+type Row = {
+  id: string;
+  title: string;
+  status: string;
+  updated_at: string | null;
+  response_count?: number;
+};
 
 const STATUS_FILTERS = ["draft", "published", "closed"] as const;
 
@@ -80,6 +86,19 @@ export function SurveyListPage({ me }: { me: Me }) {
     setActingId(id);
     try {
       await api.post(`/surveys/${id}/${action}`);
+      await load(true);
+    } catch (e) {
+      if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const runDelete = async (id: string) => {
+    if (actingId) return;
+    setActingId(id);
+    try {
+      await api.delete(`/surveys/${id}`);
       await load(true);
     } catch (e) {
       if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
@@ -180,7 +199,7 @@ export function SurveyListPage({ me }: { me: Me }) {
                   rowKey="id"
                   dataSource={filtered}
                   pagination={filtered.length > 10 ? { pageSize: 10 } : false}
-                  scroll={{ x: 720 }}
+                  scroll={{ x: 860 }}
                   columns={[
                     {
                       title: t("survey.title"),
@@ -198,6 +217,13 @@ export function SurveyListPage({ me }: { me: Me }) {
                       render: (status: string) => <StatusTag status={status} />,
                     },
                     {
+                      title: t("survey.responseCount"),
+                      dataIndex: "response_count",
+                      width: 100,
+                      align: "right" as const,
+                      render: (count: number | undefined) => count ?? 0,
+                    },
+                    {
                       title: t("survey.updatedAt"),
                       dataIndex: "updated_at",
                       width: 180,
@@ -206,10 +232,11 @@ export function SurveyListPage({ me }: { me: Me }) {
                     {
                       title: t("survey.actions"),
                       key: "actions",
-                      width: 220,
+                      width: 280,
                       render: (_: unknown, row: Row) => {
                         const busy = actingId === row.id;
                         const canEdit = writable && row.status === "draft";
+                        const actionDisabled = Boolean(actingId) && !busy;
                         return (
                           <Space wrap>
                             <Button
@@ -228,7 +255,7 @@ export function SurveyListPage({ me }: { me: Me }) {
                                 cancelText={t("common.cancel")}
                                 onConfirm={() => void runStatusAction(row.id, "publish")}
                               >
-                                <Button size="small" loading={busy} disabled={Boolean(actingId) && !busy}>
+                                <Button size="small" loading={busy} disabled={actionDisabled}>
                                   {t("survey.publish")}
                                 </Button>
                               </Popconfirm>
@@ -241,8 +268,22 @@ export function SurveyListPage({ me }: { me: Me }) {
                                 cancelText={t("common.cancel")}
                                 onConfirm={() => void runStatusAction(row.id, "close")}
                               >
-                                <Button size="small" danger loading={busy} disabled={Boolean(actingId) && !busy}>
+                                <Button size="small" danger loading={busy} disabled={actionDisabled}>
                                   {t("survey.close")}
+                                </Button>
+                              </Popconfirm>
+                            ) : null}
+                            {writable && row.status === "draft" ? (
+                              <Popconfirm
+                                title={t("survey.deleteConfirm.title")}
+                                description={t("survey.deleteConfirm.description")}
+                                okText={t("survey.delete")}
+                                cancelText={t("common.cancel")}
+                                okButtonProps={{ danger: true }}
+                                onConfirm={() => void runDelete(row.id)}
+                              >
+                                <Button size="small" danger loading={busy} disabled={actionDisabled}>
+                                  {t("survey.delete")}
                                 </Button>
                               </Popconfirm>
                             ) : null}

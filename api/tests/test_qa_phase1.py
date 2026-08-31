@@ -187,6 +187,7 @@ def test_qa16_hr_sees_n_on_masked_hr_dept(
     assert all(c["masked"] is True for c in cells)
     assert all(c["avg_score"] is None for c in cells)
     assert all(c["n"] == 3 for c in cells)
+    assert res.json()["empty"] is False
 
 
 def test_qa_sales_scores_visible(api: TestClient, hr_auth: dict[str, str], demo_survey_id: str, depts: dict[str, str]) -> None:
@@ -196,7 +197,9 @@ def test_qa_sales_scores_visible(api: TestClient, hr_auth: dict[str, str], demo_
         params={"survey_id": demo_survey_id, "department_id": depts["営業部"]},
     )
     assert res.status_code == 200, res.text
-    cells = res.json()["rows"][0]["cells"]
+    body = res.json()
+    cells = body["rows"][0]["cells"]
+    assert body["empty"] is False
     assert [c["avg_score"] for c in cells] == [4.25, 4.375, 3.0, 3.5, 4.375]
     assert all(c["masked"] is False and c["n"] == 8 for c in cells)
 
@@ -235,9 +238,37 @@ def test_qa17_empty_survey_cross_tab_no_llm(api: TestClient, hr_auth: dict[str, 
     assert published.status_code == 200, published.text
     res = api.get("/api/v1/analytics/cross-tab", headers=hr_auth, params={"survey_id": survey_id})
     assert res.status_code == 200, res.text
-    rows = res.json()["rows"]
+    body = res.json()
+    rows = body["rows"]
     assert rows
+    assert body["empty"] is True
     assert all(all(c["masked"] is True and c["avg_score"] is None for c in row["cells"]) for row in rows)
+
+
+def test_empty_survey_intent_uses_no_responses(
+    api: TestClient, hr_auth: dict[str, str], depts: dict[str, str], monkeypatch
+) -> None:
+    called = {"n": 0}
+
+    def fake_complete(*_args, **_kwargs):
+        called["n"] += 1
+        return {"conclusion": "should not run"}
+
+    monkeypatch.setattr("app.routers.analytics.complete_json", fake_complete)
+    created = api.post("/api/v1/surveys", headers=hr_auth, json={"title": f"QA empty-intent {uuid4().hex[:8]}"})
+    survey_id = created.json()["id"]
+    api.patch(f"/api/v1/surveys/{survey_id}", headers=hr_auth, json={"component_list": LIKERT_ONE})
+    assert api.post(f"/api/v1/surveys/{survey_id}/publish", headers=hr_auth).status_code == 200
+    res = api.post(
+        "/api/v1/analytics/intent",
+        headers=hr_auth,
+        json={"survey_id": survey_id, "intent": "dept_low_score_and_causes", "department_id": depts["営業部"]},
+    )
+    assert res.status_code == 200, res.text
+    assert called["n"] == 0
+    body = res.json()
+    assert body["message_key"] == "analyze.no_responses"
+    assert body["ai_run_id"] is None
 
 
 def test_qa19_intent_without_llm(
@@ -340,6 +371,7 @@ def test_cross_tab_generation_filter(
         params={"survey_id": demo_survey_id, "department_id": depts["営業部"], "generation": "20s"},
     )
     assert visible.status_code == 200, visible.text
+    assert visible.json()["empty"] is False
     assert [c["avg_score"] for c in visible.json()["rows"][0]["cells"]] == [4.25, 4.375, 3.0, 3.5, 4.375]
     hidden = api.get(
         "/api/v1/analytics/cross-tab",
@@ -348,6 +380,7 @@ def test_cross_tab_generation_filter(
     )
     assert hidden.status_code == 200, hidden.text
     cells = hidden.json()["rows"][0]["cells"]
+    assert hidden.json()["empty"] is True
     assert all(c["masked"] is True and c["avg_score"] is None for c in cells)
 
 

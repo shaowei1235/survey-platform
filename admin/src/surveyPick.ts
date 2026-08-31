@@ -18,6 +18,14 @@ function analyticsRecency(survey: AnalyzableSurvey): number {
   return timestamp(survey.closed_at) || timestamp(survey.published_at) || timestamp(survey.updated_at);
 }
 
+export function surveyPickerLabel(survey: AnalyzableSurvey, statusLabel: string): string {
+  return `${survey.title}（${statusLabel}・${survey.response_count ?? 0}件）`;
+}
+
+export function surveyHasNoResponses(survey: AnalyzableSurvey | undefined): boolean {
+  return survey != null && (survey.response_count ?? 0) === 0;
+}
+
 /** Prefer the analyzable survey with the most responses; ties use closed/published recency. */
 export function pickDefaultAnalyzableSurvey<T extends AnalyzableSurvey>(surveys: T[]): T | undefined {
   if (surveys.length === 0) return undefined;

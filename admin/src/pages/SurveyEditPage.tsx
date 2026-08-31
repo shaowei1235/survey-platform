@@ -1,5 +1,5 @@
 import { ActionCreators } from "redux-undo";
-import { Alert, Button, Input, Modal, Space, message } from "antd";
+import { Alert, Button, Modal, Popconfirm, Space, message } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDispatch, useSelector } from "react-redux";
@@ -36,7 +36,9 @@ export function SurveyEditPage({ me }: { me: Me }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [acting, setActing] = useState<"publish" | "close" | "delete" | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const busy = saving || acting !== null;
 
   const load = () => {
     if (!id) {
@@ -95,28 +97,71 @@ export function SurveyEditPage({ me }: { me: Me }) {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [present.dirty]);
 
-  const save = async () => {
-    if (saving || locked) return;
+  const persist = async (): Promise<boolean> => {
+    if (locked) return false;
     const title = present.title.trim();
     if (!title || title.length > 200) {
       message.error(t("editor.titleLength"));
-      return;
+      return false;
     }
     const component_list = withNormalizedChoices(present.componentList);
     const invalid = validateComponentList(component_list);
     if (invalid) {
       message.error(t(invalid));
-      return;
+      return false;
     }
+    await api.patch(`/surveys/${id}`, { title: present.title, component_list });
+    dispatch(editorActions.markSaved());
+    return true;
+  };
+
+  const save = async () => {
+    if (busy || locked) return;
     setSaving(true);
     try {
-      await api.patch(`/surveys/${id}`, { title: present.title, component_list });
-      dispatch(editorActions.markSaved());
-      message.success(t("survey.save"));
+      const ok = await persist();
+      if (ok) message.success(t("survey.save"));
     } catch (e) {
       if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const runStatusAction = async (action: "publish" | "close") => {
+    if (busy) return;
+    setActing(action);
+    try {
+      if (action === "publish" && present.dirty) {
+        const ok = await persist();
+        if (!ok) return;
+      }
+      const { data } = await api.post(`/surveys/${id}/${action}`);
+      dispatch(
+        editorActions.hydrate({
+          surveyId: data.id,
+          title: data.title,
+          status: data.status,
+          componentList: data.component_list ?? present.componentList,
+        }),
+      );
+    } catch (e) {
+      if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const runDelete = async () => {
+    if (busy || present.status !== "draft") return;
+    setActing("delete");
+    try {
+      await api.delete(`/surveys/${id}`);
+      navigate("/surveys");
+    } catch (e) {
+      if (!isReauthRedirecting()) message.error(t(apiMessageKey(e)));
+    } finally {
+      setActing(null);
     }
   };
 
@@ -164,6 +209,46 @@ export function SurveyEditPage({ me }: { me: Me }) {
             <Button type="primary" disabled={locked} loading={saving} onClick={() => void save()}>
               {t("survey.save")}
             </Button>
+            {writable && present.status === "draft" ? (
+              <Popconfirm
+                title={t("survey.publishConfirm.title")}
+                description={t("survey.publishConfirm.description")}
+                okText={t("survey.publish")}
+                cancelText={t("common.cancel")}
+                onConfirm={() => void runStatusAction("publish")}
+              >
+                <Button loading={acting === "publish"} disabled={busy}>
+                  {t("survey.publish")}
+                </Button>
+              </Popconfirm>
+            ) : null}
+            {writable && present.status === "published" ? (
+              <Popconfirm
+                title={t("survey.closeConfirm.title")}
+                description={t("survey.closeConfirm.description")}
+                okText={t("survey.close")}
+                cancelText={t("common.cancel")}
+                onConfirm={() => void runStatusAction("close")}
+              >
+                <Button danger loading={acting === "close"} disabled={busy}>
+                  {t("survey.close")}
+                </Button>
+              </Popconfirm>
+            ) : null}
+            {writable && present.status === "draft" ? (
+              <Popconfirm
+                title={t("survey.deleteConfirm.title")}
+                description={t("survey.deleteConfirm.description")}
+                okText={t("survey.delete")}
+                cancelText={t("common.cancel")}
+                okButtonProps={{ danger: true }}
+                onConfirm={() => void runDelete()}
+              >
+                <Button danger loading={acting === "delete"} disabled={busy}>
+                  {t("survey.delete")}
+                </Button>
+              </Popconfirm>
+            ) : null}
           </Space>
         }
       />
