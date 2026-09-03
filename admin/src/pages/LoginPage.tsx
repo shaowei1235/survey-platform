@@ -5,9 +5,13 @@ import { useNavigate } from "react-router-dom";
 import { apiMessageKey, fetchMe, login } from "../api";
 import { clearTokens, isAdminRole } from "../session";
 
+const TEST_NO = "E-HR";
+const TEST_PW = "Init#pass1";
+
 export function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [form] = Form.useForm<{ employee_no: string; password: string }>();
   const [submitting, setSubmitting] = useState(false);
 
   const onFinish = async (values: { employee_no: string; password: string }) => {
@@ -29,23 +33,71 @@ export function LoginPage() {
     }
   };
 
+  const fillTestAccount = () => {
+    form.setFieldsValue({ employee_no: TEST_NO, password: TEST_PW });
+    message.success(t("login.testAccountFillOk"));
+  };
+
   return (
     <div className="admin-login-wrap">
       <Card className="admin-login-card">
         <Typography.Title level={3} style={{ marginTop: 0 }}>
           {t("appName")}
         </Typography.Title>
-        <Form layout="vertical" onFinish={(v) => void onFinish(v)}>
-          <Form.Item name="employee_no" label={t("login.employeeNo")} rules={[{ required: true }]}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={(v) => void onFinish(v)}
+        >
+          <Form.Item
+            name="employee_no"
+            label={t("login.employeeNo")}
+            rules={[{ required: true }]}
+          >
             <Input autoComplete="username" />
           </Form.Item>
-          <Form.Item name="password" label={t("login.password")} rules={[{ required: true }]}>
+          <Form.Item
+            name="password"
+            label={t("login.password")}
+            rules={[{ required: true }]}
+          >
             <Input.Password autoComplete="current-password" />
           </Form.Item>
-          <Button type="primary" htmlType="submit" block loading={submitting} disabled={submitting}>
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            loading={submitting}
+            disabled={submitting}
+          >
             {t("login.submit")}
           </Button>
         </Form>
+
+        <div className="admin-login-test-hint">
+          <div className="admin-login-test-title">{t("login.testAccount")}</div>
+          <div className="admin-login-test-row">
+            <span className="admin-login-test-label">{t("login.employeeNo")}</span>
+            <Typography.Text
+              className="admin-login-test-value"
+              copyable={{ tooltips: ["コピー", "コピーしました"] }}
+            >
+              {TEST_NO}
+            </Typography.Text>
+          </div>
+          <div className="admin-login-test-row">
+            <span className="admin-login-test-label">{t("login.password")}</span>
+            <Typography.Text
+              className="admin-login-test-value"
+              copyable={{ tooltips: ["コピー", "コピーしました"] }}
+            >
+              {TEST_PW}
+            </Typography.Text>
+          </div>
+          <Button block style={{ marginTop: 8 }} onClick={fillTestAccount}>
+            {t("login.testAccountFill")}
+          </Button>
+        </div>
       </Card>
     </div>
   );

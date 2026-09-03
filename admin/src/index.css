@@ -25,6 +25,42 @@ body {
   max-width: 400px;
 }
 
+.admin-login-test-hint {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.admin-login-test-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #262626;
+  font-size: 14px;
+}
+
+.admin-login-test-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  line-height: 24px;
+}
+
+.admin-login-test-label {
+  min-width: 5em;
+  color: #595959;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.admin-login-test-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: #262626;
+}
+
 @media (min-width: 768px) {
   .admin-login-wrap {
     align-items: center;

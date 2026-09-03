@@ -29,6 +29,9 @@
     "employeeNo": "社員番号",
     "password": "パスワード",
     "submit": "ログイン",
+    "testAccount": "テスト用アカウント",
+    "testAccountFill": "フォームに自動入力",
+    "testAccountFillOk": "フォームに入力しました",
     "useClientApp": "管理機能の権限がありません。回答者アプリを利用してください。",
     "noAnswerRole": "回答権限がありません。"
   },

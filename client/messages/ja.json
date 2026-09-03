@@ -7,7 +7,10 @@
     "noAnswerRole": "回答権限がありません。",
     "title": "ログイン",
     "description": "社員番号とパスワードで回答を開始します。",
-    "hint": "この画面は社内の回答者向けです。"
+    "hint": "この画面は社内の回答者向けです。",
+    "testAccount": "テスト用アカウント",
+    "testAccountFill": "フォームに自動入力",
+    "testAccountFillOk": "フォームに入力しました"
   },
   "answer": {
     "list": "回答できるアンケート",

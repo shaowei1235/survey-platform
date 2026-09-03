@@ -68,6 +68,42 @@ body {
   margin: 16px 0 0;
 }
 
+.client-login-test-hint {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px dashed #d9d9d9;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.client-login-test-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #262626;
+  font-size: 14px;
+}
+
+.client-login-test-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  line-height: 24px;
+}
+
+.client-login-test-label {
+  min-width: 5em;
+  color: #595959;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.client-login-test-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  color: #262626;
+}
+
 .client-loading,
 .client-error {
   padding: 32px 0;
