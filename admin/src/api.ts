@@ -34,7 +34,8 @@ function isUnauthenticatedError(error: AxiosError<ApiErrorBody>) {
   return key === "error.unauthenticated" || (status === 401 && !key);
 }
 
-const apiBase = `${import.meta.env.BASE_URL}api/v1`.replace(/\/{2,}/g, "/");
+const configuredApiBase = import.meta.env.VITE_API_BASE?.trim();
+const apiBase = (configuredApiBase || `${import.meta.env.BASE_URL}api/v1`).replace(/\/+$/, "");
 
 export const api = axios.create({ baseURL: apiBase });
 

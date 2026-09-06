@@ -3,7 +3,7 @@ import { t } from "./i18n";
 
 export type ApiErrorBody = { error_code: string; message_key: string };
 
-const BASE = process.env.NEXT_PUBLIC_API_BASE || "/api/v1";
+const BASE = (process.env.NEXT_PUBLIC_API_BASE?.trim() || "/api/v1").replace(/\/+$/, "");
 
 let reauthInFlight = false;
 

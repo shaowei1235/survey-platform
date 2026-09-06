@@ -30,7 +30,7 @@
 
 <img src="screenshots/client-fill.png" alt="従業員の回答画面。進捗とリッカート設問" width="800" />
 
-固定分析（`/analytics/intent`）は任意機能です。`LLM_API_KEY` が空でも、ログイン → 公開 / 回答 → ダッシュボードのマスクと Excel までは動きます。
+固定分析（`/analytics/intent`）は任意機能です。`LLM_API_KEY` が空でも、ログイン → 公開 / 回答 → ダッシュボードのマスクと Excel までは動きます。AWS Production では `LLM_ENABLED=false` とし、admin の `VITE_LLM_ENABLED` を未設定（または `false`）にして入口を非表示にします。
 
 ## 技術スタック
 
@@ -120,14 +120,19 @@ npm run dev
 | --- | --- | --- |
 | `DATABASE_URL` | `postgresql+psycopg://survey:survey@127.0.0.1:5432/survey` | Postgres |
 | `JWT_SECRET` | `change-me-to-at-least-32-characters-long` | JWT 署名。ローカル用プレースホルダです |
-| `ADMIN_ORIGIN` | `http://localhost:5173` | CORS |
-| `CLIENT_ORIGIN` | `http://localhost:3000` | CORS |
+| `APP_RUNTIME` | `local` | `lambda` の場合は Lambda 向け DB 接続方式を使用 |
+| `CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | 許可 origin のカンマ区切り一覧 |
+| `LLM_ENABLED` | ローカルでは既定 `true`、Lambda では既定 `false` | 固定分析の backend feature flag |
 | `LLM_BASE_URL` | `https://api.openai.com/v1` | 固定分析用。キーが空なら未使用 |
 | `LLM_API_KEY` | （空） | 空のままでデモの主経路は動きます |
 | `LLM_MODEL` | `gpt-5-nano-2025-08-07` | 固定分析用 |
 | `MIN_CELL_N` | `5`（コード既定。`.env.example` には未記載） | セル非開示の下限 |
 
 固定分析を試す場合のみ `LLM_API_KEY`（必要なら `LLM_BASE_URL` / `LLM_MODEL`）を設定してください。
+
+画面側の環境変数は `admin/.env.example` と `client/.env.example` を参照してください。本番 build では admin に `VITE_API_BASE=https://api.example.com/api/v1`、client に `NEXT_PUBLIC_API_BASE=https://api.example.com/api/v1` を設定します。未設定のローカル開発では、従来どおり各 dev server の `/api/v1` proxy / rewrite を使います。
+
+Lambda の handler は `app.handler.handler` です。migration と seed は handler やアプリ起動時には実行されず、デプロイ前の独立した手順として実行します。
 
 ## デモアカウント
 

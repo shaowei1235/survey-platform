@@ -9,6 +9,7 @@ import { ErrorState } from "../components/ErrorState";
 import { LoadingState } from "../components/LoadingState";
 import { PageHeader } from "../components/PageHeader";
 import { StatusTag } from "../components/StatusTag";
+import { llmEnabled } from "../config";
 import { canAnalyze, canWriteOrg, canWriteSurvey, type Me, type RoleCode } from "../session";
 
 const ROLE_I18N: Record<RoleCode, string> = {
@@ -116,7 +117,7 @@ export function HomePage({ me }: { me: Me }) {
     if (writable && draftCount > 0) {
       items.push({ to: "/surveys", label: t("home.next.drafts", { count: draftCount }) });
     }
-    if (canAnalyze(me) && publishedCount > 0) {
+    if (llmEnabled && canAnalyze(me) && publishedCount > 0) {
       items.push({ to: "/analytics/intent", label: t("home.next.analyze") });
     }
     return items.slice(0, 3);

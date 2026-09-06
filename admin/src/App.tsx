@@ -4,6 +4,7 @@ import { App as AntdApp } from "antd";
 import { fetchMe, isReauthRedirecting, logout, onReauthRequired } from "./api";
 import { AppShell } from "./components/AppShell";
 import { LoadingState } from "./components/LoadingState";
+import { llmEnabled } from "./config";
 import i18n from "./i18n";
 import { AnalyzePage } from "./pages/AnalyzePage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -58,7 +59,10 @@ function Shell() {
         <Route path="/org/departments" element={<DeptPage me={me} />} />
         <Route path="/org/users" element={<UserPage me={me} />} />
         <Route path="/analytics/dashboard" element={<DashboardPage />} />
-        <Route path="/analytics/intent" element={<AnalyzePage />} />
+        <Route
+          path="/analytics/intent"
+          element={llmEnabled ? <AnalyzePage /> : <Navigate to="/analytics/dashboard" replace />}
+        />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppShell>

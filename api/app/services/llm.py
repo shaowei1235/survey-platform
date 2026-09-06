@@ -108,7 +108,12 @@ def assert_summary_has_no_counts(parsed: dict) -> None:
 
 
 def complete_json(system: str, user_payload: dict, schema: dict, schema_name: str) -> dict:
-    if not settings.llm_base_url or not settings.llm_api_key or not settings.llm_model:
+    if (
+        not settings.llm_feature_enabled
+        or not settings.llm_base_url
+        or not settings.llm_api_key
+        or not settings.llm_model
+    ):
         raise ApiError("AI_UPSTREAM_FAILED")
     url = settings.llm_base_url.rstrip("/") + "/chat/completions"
     body = {
@@ -149,7 +154,12 @@ def complete_json(system: str, user_payload: dict, schema: dict, schema_name: st
 
 
 def stream_markdown(system: str, user_payload: dict) -> Iterator[str]:
-    if not settings.llm_base_url or not settings.llm_api_key or not settings.llm_model:
+    if (
+        not settings.llm_feature_enabled
+        or not settings.llm_base_url
+        or not settings.llm_api_key
+        or not settings.llm_model
+    ):
         raise ApiError("AI_UPSTREAM_FAILED")
     url = settings.llm_base_url.rstrip("/") + "/chat/completions"
     body = {

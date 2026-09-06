@@ -12,7 +12,7 @@ app = FastAPI(title="社内アンケート基盤 API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.admin_origin, settings.client_origin],
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

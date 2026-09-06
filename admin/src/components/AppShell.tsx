@@ -11,6 +11,7 @@ import { Avatar, Breadcrumb, Button, Drawer, Grid, Layout, Menu, Tooltip, Typogr
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { llmEnabled } from "../config";
 import { canAnalyze, canWriteOrg, canWriteSurvey, type Me, type RoleCode } from "../session";
 
 type MenuItem = NonNullable<MenuProps["items"]>[number];
@@ -121,7 +122,9 @@ export function AppShell({ me, onLogout, children }: AppShellProps) {
     const analyticsChildren: MenuItem[] = canAnalyze(me)
       ? [
           item("/analytics/dashboard", <BarChartOutlined />, "/analytics/dashboard", t("nav.dashboard")),
-          item("/analytics/intent", <RobotOutlined />, "/analytics/intent", t("nav.analyze")),
+          ...(llmEnabled
+            ? [item("/analytics/intent", <RobotOutlined />, "/analytics/intent", t("nav.analyze"))]
+            : []),
         ]
       : [];
 
