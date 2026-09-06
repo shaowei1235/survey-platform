@@ -1,0 +1,13 @@
+# Runtime-only dependencies for the AWS Lambda Python 3.13 package.
+# Build this file in Linux x86_64; do not install a macOS virtualenv into the ZIP.
+fastapi==0.141.1
+mangum==0.21.0
+sqlalchemy==2.0.52
+psycopg[binary]==3.3.4
+pydantic==2.13.4
+pydantic-settings==2.15.0
+argon2-cffi==25.1.0
+PyJWT==2.13.0
+httpx==0.28.1
+python-dotenv==1.2.3
+openpyxl==3.1.5
