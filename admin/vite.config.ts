@@ -12,6 +12,7 @@ export default defineConfig({
     alias: {
       "@survey-fill": path.join(repoRoot, "client/components"),
     },
+    dedupe: ["react", "react-dom", "antd"],
   },
   server: {
     port: 5173,
