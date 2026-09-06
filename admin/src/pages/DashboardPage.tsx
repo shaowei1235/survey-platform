@@ -210,6 +210,7 @@ export function DashboardPage() {
     try {
       const res = await api.get("/analytics/cross-tab.xlsx", {
         params: compactParams(lastQuery),
+        headers: { Accept: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
         responseType: "blob",
       });
       const blob = res.data as Blob;
