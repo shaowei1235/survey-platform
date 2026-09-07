@@ -4,8 +4,12 @@ export default defineConfig({
   lang: 'ja-JP',
   title: '社内アンケート基盤',
   description: '要件定義から設計・実装・テスト・デプロイまでを一貫して示すプロジェクトドキュメント',
+  base: '/',
   cleanUrls: true,
   lastUpdated: true,
+  sitemap: {
+    hostname: 'https://survey.liushaowei.dev'
+  },
   outDir: './dist',
   head: [
     ['meta', { name: 'theme-color', content: '#172554' }],

@@ -6,7 +6,8 @@
 
 - [Admin](https://survey-admin.liushaowei.dev)
 - [Client](https://survey-client.liushaowei.dev)
-- [公開ドキュメントのソース](docs_public/index.md)
+- [公開技術ドキュメント](https://survey.liushaowei.dev)
+- [ドキュメントのソース](docs_public/index.md)
 
 公開環境は Amplify Hosting → API Gateway → Lambda → Neon PostgreSQL で稼働しています。技術ドキュメントもアプリケーションと同じリポジトリで管理し、要件、設計、実装、テスト、AWS 運用をコード変更と一緒に追跡します。
 
