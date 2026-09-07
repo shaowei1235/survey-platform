@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - aws-serverless
+      - main
     paths:
       - "docs_public/**"
       - ".github/workflows/docs-pages.yml"
