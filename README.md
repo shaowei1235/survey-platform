@@ -2,6 +2,14 @@
 
 社内向けの **従業員満足度（ES）調査** を、作成・公開・回答・集計まで扱う Web アプリケーションです。汎用フォーム SaaS ではなく、日本企業の人事運用（組織階層・少人数部署のプライバシー）に寄せて実装しています。求職用の個人開発ポートフォリオです。
 
+## 公開環境・技術ドキュメント
+
+- [Admin](https://survey-admin.liushaowei.dev)
+- [Client](https://survey-client.liushaowei.dev)
+- [公開ドキュメントのソース](docs_public/index.md)
+
+公開環境は Amplify Hosting → API Gateway → Lambda → Neon PostgreSQL で稼働しています。技術ドキュメントもアプリケーションと同じリポジトリで管理し、要件、設計、実装、テスト、AWS 運用をコード変更と一緒に追跡します。
+
 - **セルマスク** — 回答数が 5 未満の集計セルは `非開示（n<5）` と出し、個人が特定されないようにします。
 - **組織ロールアップ** — 部の平均点・回答状況は、配下の課を含めて集計します。
 - **日本語の ES 運用** — 下書き / 公開中 / 終了のライフサイクル、人事が公開して従業員が回答する流れを前提にしています。
@@ -39,7 +47,8 @@
 | 管理画面 | Vite 6 + React 18 + TypeScript + Ant Design 5（ポート 5173） |
 | 回答画面 | Next.js 15 + React 19 + TypeScript + Ant Design 5（ポート 3000） |
 | API | FastAPI + SQLAlchemy 2 + Alembic + JWT（ポート 8000） |
-| DB | PostgreSQL 16（`docker compose` は DB のみ） |
+| DB | Neon PostgreSQL（local は PostgreSQL 16） |
+| AWS | Amplify Hosting + API Gateway + Lambda + CloudWatch |
 
 認証は社員番号 + パスワードです。管理画面・回答画面とも `/api` を API へプロキシします。UI の既定言語は日本語です。
 
@@ -47,9 +56,10 @@
 
 ```mermaid
 flowchart LR
-  Admin["admin Vite :5173"] --> API["api FastAPI :8000"]
-  Client["client Next.js :3000"] --> API
-  API --> DB["PostgreSQL :5432"]
+  Admin["Admin / Amplify"] --> APIGW["API Gateway"]
+  Client["Client / Amplify"] --> APIGW
+  APIGW --> Lambda["Lambda / FastAPI"]
+  Lambda --> DB["Neon PostgreSQL"]
 ```
 
 | ディレクトリ | 役割 |
@@ -57,6 +67,7 @@ flowchart LR
 | `admin/` | 人事・経営層・部門長向け。一覧・編集・ダッシュボード・固定分析、部門 / 従業員マスタ |
 | `client/` | 従業員向け回答。公開中かつ未回答のアンケートのみ表示 |
 | `api/` | REST API（`/api/v1`）、集計・マスク・Excel、任意の LLM 分析 |
+| `docs_public/` | VitePress による公開技術ドキュメント |
 | `docker-compose.yml` | Postgres 16 のみ |
 
 ## ローカル起動
